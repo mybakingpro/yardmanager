@@ -7,232 +7,151 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --bg: #0f1117;
-    --surface: #181c27;
-    --surface2: #1e2333;
-    --border: #2a3050;
-    --accent: #f59e0b;
-    --accent2: #ef4444;
-    --green: #22c55e;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --font-head: 'Barlow Condensed', sans-serif;
-    --font-body: 'Barlow', sans-serif;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; }
+:root {
+  --bg: #f5f0e8;
+  --surface: #ffffff;
+  --surface2: #f0ebe0;
+  --border: #d4c9b0;
+  --accent: #d97706;
+  --accent2: #ef4444;
+  --green: #16a34a;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --dark: #1a1a1a;
+  --font-head: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--font-body); min-height:100vh; }
 
-  /* LOGIN */
-  #login-screen {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 100vh;
-    background: radial-gradient(ellipse at 30% 50%, #1e2a1a 0%, #0f1117 60%);
-  }
-  .login-box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 4px; padding: 48px 40px; width: 380px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
-  .login-logo { font-family: var(--font-head); font-size: 32px; font-weight: 800;
-    color: var(--accent); letter-spacing: 2px; margin-bottom: 4px; }
-  .login-sub { color: var(--muted); font-size: 13px; margin-bottom: 36px; text-transform: uppercase; letter-spacing: 1px; }
-  .login-box input {
-    width: 100%; background: var(--bg); border: 1px solid var(--border);
-    color: var(--text); padding: 12px 16px; border-radius: 3px;
-    font-family: var(--font-body); font-size: 15px; margin-bottom: 12px;
-    outline: none; transition: border-color 0.2s;
-  }
-  .login-box input:focus { border-color: var(--accent); }
-  .btn-primary {
-    width: 100%; background: var(--accent); color: #000; font-family: var(--font-head);
-    font-size: 18px; font-weight: 700; letter-spacing: 2px; border: none;
-    padding: 13px; border-radius: 3px; cursor: pointer; transition: opacity 0.2s;
-    text-transform: uppercase;
-  }
-  .btn-primary:hover { opacity: 0.85; }
-  .login-error { color: var(--accent2); font-size: 13px; margin-top: 10px; text-align: center; }
+#login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 50%,#1a1a1a 100%); }
+.login-box { background:#fff; border:4px solid var(--accent); border-radius:4px; padding:48px 40px; width:400px; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+.login-logo { font-family:var(--font-head); font-size:38px; font-weight:800; color:var(--dark); letter-spacing:2px; margin-bottom:2px; }
+.login-logo span { color:var(--accent); }
+.login-sub { color:var(--muted); font-size:13px; margin-bottom:36px; text-transform:uppercase; letter-spacing:1px; }
+.login-box input { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:12px 16px; border-radius:3px; font-family:var(--font-body); font-size:15px; margin-bottom:12px; outline:none; transition:border-color 0.2s; }
+.login-box input:focus { border-color:var(--accent); }
+.btn-primary { width:100%; background:var(--accent); color:#fff; font-family:var(--font-head); font-size:18px; font-weight:700; letter-spacing:2px; border:none; padding:13px; border-radius:3px; cursor:pointer; transition:opacity 0.2s; text-transform:uppercase; }
+.btn-primary:hover { opacity:0.85; }
+.login-error { color:var(--accent2); font-size:13px; margin-top:10px; text-align:center; }
 
-  /* APP SHELL */
-  #app-screen { display: none; flex-direction: column; min-height: 100vh; }
-  .topbar {
-    background: var(--surface); border-bottom: 2px solid var(--accent);
-    padding: 0 24px; display: flex; align-items: center; gap: 20px; height: 56px;
-  }
-  .topbar-logo { font-family: var(--font-head); font-size: 22px; font-weight: 800;
-    color: var(--accent); letter-spacing: 2px; margin-right: 20px; }
-  .nav-tabs { display: flex; gap: 4px; flex: 1; }
-  .nav-tab {
-    padding: 8px 18px; font-family: var(--font-head); font-size: 15px; font-weight: 600;
-    letter-spacing: 1px; text-transform: uppercase; background: transparent;
-    border: none; color: var(--muted); cursor: pointer; border-radius: 3px;
-    transition: all 0.2s;
-  }
-  .nav-tab:hover { color: var(--text); background: var(--surface2); }
-  .nav-tab.active { color: var(--accent); background: var(--surface2); }
-  .topbar-right { display: flex; align-items: center; gap: 12px; }
-  .user-badge { font-size: 12px; color: var(--muted); }
-  .btn-signout {
-    background: transparent; border: 1px solid var(--border); color: var(--muted);
-    padding: 6px 14px; border-radius: 3px; cursor: pointer; font-size: 12px;
-    font-family: var(--font-body); transition: all 0.2s;
-  }
-  .btn-signout:hover { border-color: var(--accent2); color: var(--accent2); }
+#app-screen { display:none; flex-direction:column; min-height:100vh; }
+.topbar { background:#1a1a1a; border-bottom:3px solid var(--accent); padding:0 24px; display:flex; align-items:center; gap:4px; height:56px; }
+.topbar-logo { font-family:var(--font-head); font-size:20px; font-weight:800; color:var(--accent); letter-spacing:2px; margin-right:16px; white-space:nowrap; }
+.nav-tabs { display:flex; gap:2px; flex:1; overflow-x:auto; }
+.nav-tab { padding:8px 14px; font-family:var(--font-head); font-size:14px; font-weight:600; letter-spacing:1px; text-transform:uppercase; background:transparent; border:none; color:#aaa; cursor:pointer; border-radius:3px; transition:all 0.2s; white-space:nowrap; }
+.nav-tab:hover { color:#fff; background:rgba(255,255,255,0.1); }
+.nav-tab.active { color:var(--accent); background:rgba(217,119,6,0.15); }
+.topbar-right { display:flex; align-items:center; gap:10px; margin-left:auto; }
+.user-badge { font-size:11px; color:#888; white-space:nowrap; }
+.btn-signout { background:transparent; border:1px solid #444; color:#888; padding:5px 12px; border-radius:3px; cursor:pointer; font-size:11px; transition:all 0.2s; }
+.btn-signout:hover { border-color:var(--accent2); color:var(--accent2); }
 
-  .main-content { flex: 1; padding: 28px; max-width: 1400px; margin: 0 auto; width: 100%; }
+.main-content { flex:1; padding:24px; max-width:1400px; margin:0 auto; width:100%; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
 
-  /* TABS */
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+.stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:24px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:18px 20px; position:relative; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.stat-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--accent); }
+.stat-card.red::before { background:var(--accent2); }
+.stat-card.green::before { background:var(--green); }
+.stat-card.blue::before { background:#3b82f6; }
+.stat-card.purple::before { background:#8b5cf6; }
+.stat-label { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:6px; }
+.stat-value { font-family:var(--font-head); font-size:32px; font-weight:800; line-height:1; }
+.stat-card.red .stat-value { color:var(--accent2); }
+.stat-card.green .stat-value { color:var(--green); }
+.stat-card.blue .stat-value { color:#3b82f6; }
+.stat-card.purple .stat-value { color:#8b5cf6; }
 
-  /* STATS ROW */
-  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
-    padding: 20px 24px; position: relative; overflow: hidden;
-  }
-  .stat-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
-  .stat-card.red::before { background: var(--accent2); }
-  .stat-card.green::before { background: var(--green); }
-  .stat-card.blue::before { background: #3b82f6; }
-  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 8px; }
-  .stat-value { font-family: var(--font-head); font-size: 36px; font-weight: 800; line-height: 1; }
-  .stat-card.red .stat-value { color: var(--accent2); }
-  .stat-card.green .stat-value { color: var(--green); }
-  .stat-card.blue .stat-value { color: #3b82f6; }
+.section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+.section-title { font-family:var(--font-head); font-size:22px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+.btn-add { background:var(--accent); color:#fff; font-family:var(--font-head); font-size:13px; font-weight:700; letter-spacing:1px; border:none; padding:8px 18px; border-radius:3px; cursor:pointer; text-transform:uppercase; transition:opacity 0.2s; }
+.btn-add:hover { opacity:0.85; }
 
-  /* SECTION HEADER */
-  .section-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 18px;
-  }
-  .section-title { font-family: var(--font-head); font-size: 24px; font-weight: 700;
-    letter-spacing: 1px; text-transform: uppercase; }
-  .btn-add {
-    background: var(--accent); color: #000; font-family: var(--font-head);
-    font-size: 14px; font-weight: 700; letter-spacing: 1px; border: none;
-    padding: 9px 20px; border-radius: 3px; cursor: pointer; text-transform: uppercase;
-    transition: opacity 0.2s;
-  }
-  .btn-add:hover { opacity: 0.85; }
+.table-wrap { overflow-x:auto; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:20px; }
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th { background:#1a1a1a; text-align:left; padding:10px 12px; font-family:var(--font-head); font-size:11px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--accent); border-bottom:1px solid var(--border); }
+.data-table td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; background:var(--surface); }
+.data-table tr:hover td { background:var(--surface2); }
 
-  /* TABLE */
-  .data-table { width: 100%; border-collapse: collapse; }
-  .data-table th {
-    background: var(--surface2); text-align: left; padding: 10px 14px;
-    font-family: var(--font-head); font-size: 12px; font-weight: 600;
-    letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
-    border-bottom: 1px solid var(--border);
-  }
-  .data-table td {
-    padding: 11px 14px; border-bottom: 1px solid rgba(42,48,80,0.5);
-    font-size: 14px; vertical-align: middle;
-  }
-  .data-table tr:hover td { background: rgba(245,158,11,0.04); }
-  .badge {
-    display: inline-block; padding: 3px 10px; border-radius: 2px;
-    font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-    font-family: var(--font-head);
-  }
-  .badge-paid { background: rgba(34,197,94,0.15); color: var(--green); }
-  .badge-unpaid { background: rgba(239,68,68,0.15); color: var(--accent2); }
-  .badge-late { background: rgba(239,68,68,0.25); color: #ff6b6b; border: 1px solid rgba(239,68,68,0.3); }
-  .badge-active { background: rgba(34,197,94,0.1); color: var(--green); }
-  .badge-inactive { background: rgba(100,116,139,0.2); color: var(--muted); }
+.badge { display:inline-block; padding:3px 8px; border-radius:2px; font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; font-family:var(--font-head); }
+.badge-paid { background:rgba(22,163,74,0.12); color:var(--green); }
+.badge-unpaid { background:rgba(239,68,68,0.12); color:var(--accent2); }
+.badge-late { background:rgba(239,68,68,0.2); color:#dc2626; border:1px solid rgba(239,68,68,0.3); }
+.badge-partial { background:rgba(245,158,11,0.15); color:#b45309; }
+.badge-active { background:rgba(22,163,74,0.1); color:var(--green); }
+.badge-inactive { background:rgba(107,114,128,0.15); color:var(--muted); }
+.badge-vacant { background:rgba(59,130,246,0.12); color:#2563eb; }
 
-  /* ACTION BUTTONS */
-  .btn-sm {
-    padding: 5px 12px; font-size: 12px; font-family: var(--font-head); font-weight: 600;
-    letter-spacing: 0.5px; border-radius: 2px; cursor: pointer; border: none;
-    transition: opacity 0.2s; text-transform: uppercase;
-  }
-  .btn-pay { background: rgba(34,197,94,0.2); color: var(--green); }
-  .btn-pay:hover { background: rgba(34,197,94,0.3); }
-  .btn-edit { background: rgba(245,158,11,0.15); color: var(--accent); }
-  .btn-edit:hover { background: rgba(245,158,11,0.25); }
-  .btn-del { background: rgba(239,68,68,0.1); color: var(--accent2); }
-  .btn-del:hover { background: rgba(239,68,68,0.2); }
+.btn-sm { padding:4px 10px; font-size:11px; font-family:var(--font-head); font-weight:700; letter-spacing:0.5px; border-radius:2px; cursor:pointer; border:none; transition:opacity 0.2s; text-transform:uppercase; }
+.btn-pay { background:rgba(22,163,74,0.15); color:var(--green); }
+.btn-pay:hover { background:rgba(22,163,74,0.25); }
+.btn-edit { background:rgba(217,119,6,0.12); color:var(--accent); }
+.btn-edit:hover { background:rgba(217,119,6,0.22); }
+.btn-del { background:rgba(239,68,68,0.1); color:var(--accent2); }
+.btn-del:hover { background:rgba(239,68,68,0.2); }
+.btn-note { background:rgba(139,92,246,0.12); color:#7c3aed; }
+.btn-note:hover { background:rgba(139,92,246,0.22); }
 
-  /* MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    z-index: 1000; align-items: center; justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent);
-    border-radius: 4px; padding: 32px; width: 460px; max-width: 95vw;
-  }
-  .modal-title { font-family: var(--font-head); font-size: 22px; font-weight: 700;
-    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px; }
-  .form-row { margin-bottom: 16px; }
-  .form-row label { display: block; font-size: 11px; text-transform: uppercase;
-    letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
-  .form-row input, .form-row select {
-    width: 100%; background: var(--bg); border: 1px solid var(--border);
-    color: var(--text); padding: 10px 14px; border-radius: 3px;
-    font-family: var(--font-body); font-size: 14px; outline: none;
-    transition: border-color 0.2s;
-  }
-  .form-row input:focus, .form-row select:focus { border-color: var(--accent); }
-  .form-row select option { background: var(--surface); }
-  .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
-  .btn-cancel {
-    background: transparent; border: 1px solid var(--border); color: var(--muted);
-    padding: 9px 20px; border-radius: 3px; cursor: pointer; font-family: var(--font-head);
-    font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-  }
-  .btn-cancel:hover { border-color: var(--muted); }
-  .btn-save {
-    background: var(--accent); color: #000; font-family: var(--font-head);
-    font-size: 14px; font-weight: 700; letter-spacing: 1px; border: none;
-    padding: 9px 24px; border-radius: 3px; cursor: pointer; text-transform: uppercase;
-  }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-top:4px solid var(--accent); border-radius:4px; padding:28px; width:520px; max-width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
+.modal-title { font-family:var(--font-head); font-size:20px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:20px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-full { grid-column:1/-1; }
+.form-row label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:5px; font-weight:600; }
+.form-row input, .form-row select, .form-row textarea { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:9px 12px; border-radius:3px; font-family:var(--font-body); font-size:13px; outline:none; transition:border-color 0.2s; }
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color:var(--accent); }
+.form-row textarea { resize:vertical; min-height:80px; }
+.modal-actions { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
+.btn-cancel { background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 18px; border-radius:3px; cursor:pointer; font-family:var(--font-head); font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; }
+.btn-save { background:var(--accent); color:#fff; font-family:var(--font-head); font-size:13px; font-weight:700; letter-spacing:1px; border:none; padding:8px 22px; border-radius:3px; cursor:pointer; text-transform:uppercase; }
 
-  /* MONTH SELECTOR */
-  .month-bar {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
-    padding: 12px 18px;
-  }
-  .month-bar label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
-  .month-bar select {
-    background: var(--bg); border: 1px solid var(--border); color: var(--text);
-    padding: 7px 14px; border-radius: 3px; font-family: var(--font-body); font-size: 14px;
-    outline: none; cursor: pointer;
-  }
-  .btn-load {
-    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-    padding: 7px 16px; border-radius: 3px; cursor: pointer; font-family: var(--font-head);
-    font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-    transition: all 0.2s;
-  }
-  .btn-load:hover { border-color: var(--accent); color: var(--accent); }
+.controls-bar { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.filter-btn { padding:6px 14px; border-radius:2px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; font-family:var(--font-head); font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase; transition:all 0.2s; }
+.filter-btn.active, .filter-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(217,119,6,0.08); }
+.search-input { padding:7px 14px; border:1px solid var(--border); border-radius:3px; background:var(--surface); font-family:var(--font-body); font-size:13px; outline:none; width:220px; }
+.search-input:focus { border-color:var(--accent); }
+select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-radius:3px; background:var(--surface); font-family:var(--font-body); font-size:13px; outline:none; cursor:pointer; color:var(--text); }
 
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
-  .empty-state .big { font-family: var(--font-head); font-size: 48px; color: var(--border); margin-bottom: 12px; }
+.report-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:24px; }
+.report-card { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.report-card-title { font-family:var(--font-head); font-size:16px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:14px; border-bottom:2px solid var(--accent); padding-bottom:8px; }
+.report-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--surface2); font-size:13px; }
+.report-row:last-child { border-bottom:none; }
+.report-total { display:flex; justify-content:space-between; padding:10px 0 0; margin-top:6px; font-family:var(--font-head); font-size:17px; font-weight:700; border-top:2px solid var(--border); }
 
-  .msg { font-size: 13px; padding: 10px 14px; border-radius: 3px; margin-bottom: 14px; }
-  .msg-success { background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
-  .msg-error { background: rgba(239,68,68,0.1); color: var(--accent2); border: 1px solid rgba(239,68,68,0.2); }
+.note-item { background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:3px; padding:12px 14px; margin-bottom:10px; }
+.note-item.incident { border-left-color:var(--accent2); }
+.note-item.payment { border-left-color:var(--green); }
+.note-item.warning { border-left-color:#f59e0b; }
+.note-meta { display:flex; gap:10px; align-items:center; margin-bottom:6px; font-size:11px; color:var(--muted); flex-wrap:wrap; }
+.note-text { font-size:13px; line-height:1.5; }
 
-  /* PAYMENTS FILTER */
-  .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-  .filter-btn {
-    padding: 6px 16px; border-radius: 2px; border: 1px solid var(--border);
-    background: transparent; color: var(--muted); cursor: pointer; font-family: var(--font-head);
-    font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-    transition: all 0.2s;
-  }
-  .filter-btn.active, .filter-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(245,158,11,0.08); }
+.btn-print { background:#1a1a1a; color:#fff; font-family:var(--font-head); font-size:12px; font-weight:700; letter-spacing:1px; border:none; padding:7px 16px; border-radius:3px; cursor:pointer; text-transform:uppercase; }
+.btn-report { background:var(--surface2); border:1px solid var(--border); color:var(--text); font-family:var(--font-head); font-size:13px; font-weight:600; letter-spacing:1px; padding:8px 18px; border-radius:3px; cursor:pointer; text-transform:uppercase; transition:all 0.2s; }
+.btn-report:hover { border-color:var(--accent); color:var(--accent); }
+
+.empty-state { text-align:center; padding:50px 20px; color:var(--muted); font-size:14px; }
+.msg { font-size:12px; padding:9px 12px; border-radius:3px; margin-bottom:12px; }
+.msg-success { background:rgba(22,163,74,0.1); color:var(--green); border:1px solid rgba(22,163,74,0.2); }
+.msg-error { background:rgba(239,68,68,0.1); color:var(--accent2); border:1px solid rgba(239,68,68,0.2); }
+
+@media print {
+  .topbar,.controls-bar,.btn-add,.btn-sm,.btn-print,.nav-tabs,.topbar-right,.modal-overlay { display:none !important; }
+  body { background:#fff; }
+  .main-content { padding:0; }
+  .tab-panel { display:block !important; }
+}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">YARD MGR</div>
+    <div class="login-logo">YARD MANAGER <span>PRO</span></div>
     <div class="login-sub">Truck Yard Payment System</div>
     <input type="email" id="login-email" placeholder="Email address"/>
     <input type="password" id="login-pass" placeholder="Password"/>
@@ -241,14 +160,15 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="app-screen">
   <div class="topbar">
-    <div class="topbar-logo">⚡ YARD MGR</div>
+    <div class="topbar-logo">⚡ YARD MGR PRO</div>
     <div class="nav-tabs">
-      <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
-      <button class="nav-tab" onclick="showTab('spaces')">Spaces / Drivers</button>
-      <button class="nav-tab" onclick="showTab('payments')">Payments</button>
+      <button class="nav-tab active" onclick="showTab('dashboard',this)">Dashboard</button>
+      <button class="nav-tab" onclick="showTab('spaces',this)">Spaces</button>
+      <button class="nav-tab" onclick="showTab('payments',this)">Payments</button>
+      <button class="nav-tab" onclick="showTab('notes',this)">Notes</button>
+      <button class="nav-tab" onclick="showTab('reports',this)">Reports</button>
     </div>
     <div class="topbar-right">
       <span class="user-badge" id="user-label"></span>
@@ -258,105 +178,108 @@
 
   <div class="main-content">
 
-    <!-- DASHBOARD TAB -->
+    <!-- DASHBOARD -->
     <div class="tab-panel active" id="tab-dashboard">
       <div class="stats-row">
-        <div class="stat-card green">
-          <div class="stat-label">Paid This Month</div>
-          <div class="stat-value" id="stat-paid">—</div>
-        </div>
-        <div class="stat-card red">
-          <div class="stat-label">Unpaid / Late</div>
-          <div class="stat-value" id="stat-unpaid">—</div>
-        </div>
-        <div class="stat-card blue">
-          <div class="stat-label">Active Spaces</div>
-          <div class="stat-value" id="stat-spaces">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Revenue This Month</div>
-          <div class="stat-value" id="stat-revenue">—</div>
-        </div>
+        <div class="stat-card green"><div class="stat-label">Paid This Month</div><div class="stat-value" id="s-paid">—</div></div>
+        <div class="stat-card red"><div class="stat-label">Unpaid / Late</div><div class="stat-value" id="s-unpaid">—</div></div>
+        <div class="stat-card blue"><div class="stat-label">Active Spaces</div><div class="stat-value" id="s-spaces">—</div></div>
+        <div class="stat-card purple"><div class="stat-label">Vacant Spaces</div><div class="stat-value" id="s-vacant">—</div></div>
+        <div class="stat-card"><div class="stat-label">Revenue This Month</div><div class="stat-value" id="s-revenue">—</div></div>
+        <div class="stat-card red"><div class="stat-label">Late Fees Collected</div><div class="stat-value" id="s-latefees">—</div></div>
       </div>
-
       <div class="section-header">
-        <div class="section-title">Late / Unpaid This Month</div>
+        <div class="section-title">Unpaid / Late This Month</div>
+        <span id="dash-month-label" style="color:var(--muted);font-size:13px;"></span>
       </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Space</th>
-            <th>Driver</th>
-            <th>Phone</th>
-            <th>Rent</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="dashboard-tbody">
-          <tr><td colspan="6" class="empty-state">Loading...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Rent</th><th>Late Fee</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="dash-tbody"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- SPACES TAB -->
+    <!-- SPACES -->
     <div class="tab-panel" id="tab-spaces">
       <div class="section-header">
         <div class="section-title">Spaces &amp; Drivers</div>
         <button class="btn-add" onclick="openDriverModal()">+ Add Driver</button>
       </div>
+      <div class="controls-bar">
+        <input class="search-input" id="spaces-search" placeholder="Search name or space..." oninput="renderSpaces()"/>
+        <button class="filter-btn active" onclick="setSpaceFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setSpaceFilter('active',this)">Active</button>
+        <button class="filter-btn" onclick="setSpaceFilter('inactive',this)">Inactive</button>
+        <button class="filter-btn" onclick="setSpaceFilter('vacant',this)">Vacant</button>
+      </div>
       <div id="spaces-msg"></div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Space #</th>
-            <th>Driver Name</th>
-            <th>Phone</th>
-            <th>Monthly Rent</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="spaces-tbody">
-          <tr><td colspan="6" class="empty-state">Loading...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Rent/Mo</th><th>Move In</th><th>Truck Plate</th><th>Trailer #</th><th>Pmt Method</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="spaces-tbody"><tr><td colspan="10" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- PAYMENTS TAB -->
+    <!-- PAYMENTS -->
     <div class="tab-panel" id="tab-payments">
-      <div class="month-bar">
-        <label>Month:</label>
-        <select id="pay-month"></select>
-        <label>Year:</label>
-        <select id="pay-year"></select>
-        <button class="btn-load" onclick="loadPaymentsTab()">Load</button>
-        <button class="btn-add" style="margin-left:auto" onclick="generateMonthlyPayments()">Generate Month</button>
+      <div class="controls-bar">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Month:</label>
+        <select class="ctrl-select" id="pay-month"></select>
+        <select class="ctrl-select" id="pay-year"></select>
+        <button class="btn-add" onclick="loadPaymentsTab()">Load</button>
+        <button class="btn-report" onclick="generateMonthlyPayments()">Generate Month</button>
+        <button class="btn-print" onclick="window.print()">🖨 Print</button>
+      </div>
+      <div class="controls-bar">
+        <button class="filter-btn active" onclick="setPayFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setPayFilter('paid',this)">Paid</button>
+        <button class="filter-btn" onclick="setPayFilter('unpaid',this)">Unpaid</button>
+        <button class="filter-btn" onclick="setPayFilter('late',this)">Late</button>
+        <button class="filter-btn" onclick="setPayFilter('partial',this)">Partial</button>
       </div>
       <div id="payments-msg"></div>
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
-        <button class="filter-btn" onclick="setFilter('paid',this)">Paid</button>
-        <button class="filter-btn" onclick="setFilter('unpaid',this)">Unpaid</button>
-        <button class="filter-btn" onclick="setFilter('late',this)">Late Fee</button>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Space</th><th>Driver</th><th>Rent</th><th>Late Fee</th><th>Balance Due</th><th>Status</th><th>Method</th><th>Paid Date</th><th>Actions</th></tr></thead>
+          <tbody id="pay-tbody"><tr><td colspan="9" class="empty-state">Select a month and click Load</td></tr></tbody>
+        </table>
       </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Space</th>
-            <th>Driver</th>
-            <th>Rent</th>
-            <th>Late Fee</th>
-            <th>Total Due</th>
-            <th>Status</th>
-            <th>Paid Date</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="payments-tbody">
-          <tr><td colspan="8" class="empty-state">Select a month and click Load</td></tr>
-        </tbody>
-      </table>
+    </div>
+
+    <!-- NOTES -->
+    <div class="tab-panel" id="tab-notes">
+      <div class="section-header">
+        <div class="section-title">Driver Notes &amp; Incidents</div>
+        <button class="btn-add" onclick="openNoteModal()">+ Add Note</button>
+      </div>
+      <div class="controls-bar">
+        <select class="ctrl-select" id="notes-driver-filter" onchange="loadNotes()">
+          <option value="">All Drivers</option>
+        </select>
+        <button class="filter-btn active" onclick="setNoteFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setNoteFilter('general',this)">General</button>
+        <button class="filter-btn" onclick="setNoteFilter('incident',this)">Incident</button>
+        <button class="filter-btn" onclick="setNoteFilter('payment',this)">Payment</button>
+        <button class="filter-btn" onclick="setNoteFilter('warning',this)">Warning</button>
+      </div>
+      <div id="notes-msg"></div>
+      <div id="notes-list"><div class="empty-state">Loading notes...</div></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="tab-panel" id="tab-reports">
+      <div class="section-header">
+        <div class="section-title">Reports</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <select class="ctrl-select" id="rep-month"></select>
+          <select class="ctrl-select" id="rep-year"></select>
+          <button class="btn-add" onclick="loadReports()">Run Report</button>
+          <button class="btn-print" onclick="window.print()">🖨 Print</button>
+        </div>
+      </div>
+      <div id="reports-content"><div class="empty-state">Select a month and click Run Report.</div></div>
     </div>
 
   </div>
@@ -367,32 +290,57 @@
   <div class="modal">
     <div class="modal-title" id="driver-modal-title">Add Driver</div>
     <input type="hidden" id="edit-driver-id"/>
-    <div class="form-row">
-      <label>Space Number</label>
-      <input type="text" id="drv-space" placeholder="e.g. A-12"/>
-    </div>
-    <div class="form-row">
-      <label>Driver Name</label>
-      <input type="text" id="drv-name" placeholder="Full name"/>
-    </div>
-    <div class="form-row">
-      <label>Phone Number</label>
-      <input type="text" id="drv-phone" placeholder="(555) 555-5555"/>
-    </div>
-    <div class="form-row">
-      <label>Monthly Rent ($)</label>
-      <input type="number" id="drv-rent" placeholder="450"/>
-    </div>
-    <div class="form-row">
-      <label>Status</label>
-      <select id="drv-status">
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-      </select>
+    <div class="form-grid">
+      <div class="form-row"><label>Space Number *</label><input type="text" id="drv-space" placeholder="e.g. A-12"/></div>
+      <div class="form-row"><label>Status</label><select id="drv-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="vacant">Vacant</option></select></div>
+      <div class="form-row form-full"><label>Driver Full Name *</label><input type="text" id="drv-name" placeholder="Full name"/></div>
+      <div class="form-row"><label>Phone Number</label><input type="text" id="drv-phone" placeholder="(555) 555-5555"/></div>
+      <div class="form-row"><label>Monthly Rent ($) *</label><input type="number" id="drv-rent" placeholder="450"/></div>
+      <div class="form-row"><label>Move-In Date</label><input type="date" id="drv-movein"/></div>
+      <div class="form-row"><label>Move-Out Date</label><input type="date" id="drv-moveout"/></div>
+      <div class="form-row"><label>Truck Plate</label><input type="text" id="drv-plate" placeholder="ABC-1234"/></div>
+      <div class="form-row"><label>Trailer Number</label><input type="text" id="drv-trailer" placeholder="Trailer #"/></div>
+      <div class="form-row"><label>Preferred Payment</label><select id="drv-payment"><option value="cash">Cash</option><option value="zelle">Zelle</option><option value="check">Check</option><option value="venmo">Venmo</option><option value="other">Other</option></select></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeDriverModal()">Cancel</button>
-      <button class="btn-save" onclick="saveDriver()">Save</button>
+      <button class="btn-save" onclick="saveDriver()">Save Driver</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal">
+    <div class="modal-title">Record Payment</div>
+    <input type="hidden" id="pay-modal-id"/>
+    <div class="form-grid">
+      <div class="form-row"><label>Payment Type</label><select id="pay-type" onchange="togglePayType()"><option value="full">Full Payment</option><option value="partial">Partial Payment</option></select></div>
+      <div class="form-row"><label>Payment Method</label><select id="pay-method"><option value="cash">Cash</option><option value="zelle">Zelle</option><option value="check">Check</option><option value="venmo">Venmo</option><option value="other">Other</option></select></div>
+      <div class="form-row" id="partial-row" style="display:none"><label>Amount Paid ($)</label><input type="number" id="partial-amount" placeholder="0.00"/></div>
+      <div class="form-row"><label>Payment Date</label><input type="date" id="pay-date"/></div>
+      <div class="form-row form-full"><label>Notes (optional)</label><textarea id="pay-notes" placeholder="Any notes about this payment..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePayModal()">Cancel</button>
+      <button class="btn-save" onclick="recordPayment()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTE MODAL -->
+<div class="modal-overlay" id="note-modal">
+  <div class="modal">
+    <div class="modal-title">Add Note / Incident</div>
+    <div class="form-grid">
+      <div class="form-row form-full"><label>Driver</label><select id="note-driver"><option value="">Select driver...</option></select></div>
+      <div class="form-row"><label>Category</label><select id="note-category"><option value="general">General</option><option value="incident">Incident</option><option value="payment">Payment Contact</option><option value="warning">Warning</option></select></div>
+      <div class="form-row"><label>Date</label><input type="date" id="note-date"/></div>
+      <div class="form-row form-full"><label>Note *</label><textarea id="note-text" placeholder="Describe the note or incident..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeNoteModal()">Cancel</button>
+      <button class="btn-save" onclick="saveNote()">Save Note</button>
     </div>
   </div>
 </div>
@@ -400,136 +348,130 @@
 <script>
 const SUPABASE_URL = 'https://bpchubmwddaibfaxdglk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwY2h1Ym13ZGRhaWJmYXhkZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDE5ODYsImV4cCI6MjA5MTkxNzk4Nn0.Df0DMHPnCxF5YRmHpz1_cTZ1aKufgzkJTWV8sxnFpck';
-const ALLOWED_EMAILS = ['coachjackiegrant@gmail.com']; // add owner email here
-
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: false }
-});
+const ALLOWED_EMAILS = ['coachjackiegrant@gmail.com', 'relatedlogistics@gmail.com'];
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
 let currentUser = null;
+let allDrivers = [];
 let allPayments = [];
-let currentFilter = 'all';
+let allNotes = [];
+let spaceFilter = 'all';
+let payFilter = 'all';
+let noteFilter = 'all';
 
-// ── AUTH ─────────────────────────────────────────────────────────────────────
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
   document.getElementById('login-err').textContent = '';
-
-  if (!ALLOWED_EMAILS.includes(email)) {
-    document.getElementById('login-err').textContent = 'Access denied. Unauthorized email.';
-    return;
-  }
-
+  if (!ALLOWED_EMAILS.includes(email)) { document.getElementById('login-err').textContent = 'Access denied.'; return; }
   const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
   if (error) { document.getElementById('login-err').textContent = error.message; return; }
-
   currentUser = data.user;
   document.getElementById('user-label').textContent = email;
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'flex';
+  await loadAllDrivers();
   loadDashboard();
-  loadSpaces();
-  initPaymentSelectors();
+  initSelectors();
 }
 
-async function doSignOut() {
-  await _sb.auth.signOut();
-  location.reload();
-}
+async function doSignOut() { await _sb.auth.signOut(); location.reload(); }
 
-// ── TABS ──────────────────────────────────────────────────────────────────────
-function showTab(tab) {
+function showTab(tab, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  event.target.classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'spaces') renderSpaces();
+  if (tab === 'notes') loadNotes();
 }
 
-// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function loadAllDrivers() {
+  const { data } = await _sb.from('ym_drivers').select('*').order('space_number');
+  allDrivers = data || [];
+  populateDriverSelects();
+}
+
+function populateDriverSelects() {
+  ['notes-driver-filter','note-driver'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const first = id === 'notes-driver-filter' ? '<option value="">All Drivers</option>' : '<option value="">Select driver...</option>';
+    sel.innerHTML = first + allDrivers.map(d => `<option value="${d.id}">${d.space_number} — ${d.name}</option>`).join('');
+  });
+}
+
 async function loadDashboard() {
   const now = new Date();
-  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-
-  const { data: payments } = await _sb.from('ym_payments').select('*, ym_drivers(space_number, name, phone)').eq('month_year', month);
-  const { data: drivers } = await _sb.from('ym_drivers').select('*').eq('status','active');
-
-  if (!payments) return;
-
-  const paid = payments.filter(p => p.status === 'paid').length;
-  const unpaid = payments.filter(p => p.status !== 'paid').length;
-  const revenue = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount_paid || 0), 0);
-
-  document.getElementById('stat-paid').textContent = paid;
-  document.getElementById('stat-unpaid').textContent = unpaid;
-  document.getElementById('stat-spaces').textContent = drivers ? drivers.length : '—';
-  document.getElementById('stat-revenue').textContent = '$' + revenue.toLocaleString('en-US', {minimumFractionDigits:2});
-
-  const tbody = document.getElementById('dashboard-tbody');
-  const lateRows = payments.filter(p => p.status !== 'paid');
-  if (lateRows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--green)">✓ All spaces paid this month!</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = lateRows.map(p => {
+  const monthYear = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('dash-month-label').textContent = months[now.getMonth()] + ' ' + now.getFullYear();
+  const { data: payments } = await _sb.from('ym_payments').select('*, ym_drivers(space_number,name,phone)').eq('month_year', monthYear);
+  const pList = payments || [];
+  document.getElementById('s-paid').textContent = pList.filter(p=>p.status==='paid').length;
+  document.getElementById('s-unpaid').textContent = pList.filter(p=>p.status!=='paid').length;
+  document.getElementById('s-spaces').textContent = allDrivers.filter(d=>d.status==='active').length;
+  document.getElementById('s-vacant').textContent = allDrivers.filter(d=>d.status==='vacant').length;
+  const rev = pList.filter(p=>p.status==='paid').reduce((s,p)=>s+Number(p.amount_paid||0),0);
+  const lf = pList.filter(p=>p.status==='paid'&&Number(p.late_fee)>0).reduce((s,p)=>s+Number(p.late_fee),0);
+  document.getElementById('s-revenue').textContent = '$'+rev.toFixed(2);
+  document.getElementById('s-latefees').textContent = '$'+lf.toFixed(2);
+  const unpaid = pList.filter(p=>p.status!=='paid');
+  const tbody = document.getElementById('dash-tbody');
+  if (!unpaid.length) { tbody.innerHTML=`<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--green);font-weight:600">✓ All spaces paid this month!</td></tr>`; return; }
+  tbody.innerHTML = unpaid.map(p => {
     const d = p.ym_drivers;
-    const badge = p.status === 'late' ? `<span class="badge badge-late">LATE FEE</span>` : `<span class="badge badge-unpaid">UNPAID</span>`;
-    return `<tr>
-      <td><strong>${d ? d.space_number : '—'}</strong></td>
-      <td>${d ? d.name : '—'}</td>
-      <td>${d ? d.phone : '—'}</td>
-      <td>$${Number(p.rent_amount).toFixed(2)}</td>
-      <td>${badge}</td>
-      <td><button class="btn-sm btn-pay" onclick="markPaid('${p.id}','dashboard')">Mark Paid</button></td>
-    </tr>`;
+    const lf = Number(p.late_fee||0);
+    const badge = p.status==='late'?'<span class="badge badge-late">LATE</span>':'<span class="badge badge-unpaid">UNPAID</span>';
+    return `<tr><td><strong>${d?d.space_number:'—'}</strong></td><td>${d?d.name:'—'}</td><td>${d?d.phone:'—'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'—'}</td><td>${badge}</td><td><button class="btn-sm btn-pay" onclick="openPayModal('${p.id}')">Record</button></td></tr>`;
   }).join('');
 }
 
-// ── SPACES ────────────────────────────────────────────────────────────────────
-async function loadSpaces() {
-  const { data, error } = await _sb.from('ym_drivers').select('*').order('space_number');
+function setSpaceFilter(f, btn) {
+  spaceFilter = f;
+  document.querySelectorAll('#tab-spaces .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderSpaces();
+}
+
+function renderSpaces() {
+  const q = (document.getElementById('spaces-search').value||'').toLowerCase();
+  let rows = allDrivers;
+  if (spaceFilter !== 'all') rows = rows.filter(d=>d.status===spaceFilter);
+  if (q) rows = rows.filter(d=>d.name.toLowerCase().includes(q)||d.space_number.toLowerCase().includes(q));
   const tbody = document.getElementById('spaces-tbody');
-  if (!data || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="big">🚛</div>No drivers yet. Add one!</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = data.map(d => `<tr>
-    <td><strong>${d.space_number}</strong></td>
-    <td>${d.name}</td>
-    <td>${d.phone || '—'}</td>
-    <td>$${Number(d.monthly_rent).toFixed(2)}</td>
-    <td><span class="badge ${d.status === 'active' ? 'badge-active' : 'badge-inactive'}">${d.status}</span></td>
-    <td style="display:flex;gap:6px;">
-      <button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button>
-      <button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Remove</button>
-    </td>
-  </tr>`).join('');
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="10" class="empty-state">No drivers found.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(d => {
+    const bc = d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
+    return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.phone||'—'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td style="color:var(--muted)">${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td>${d.trailer_number||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
+  }).join('');
 }
 
 function openDriverModal(clear=true) {
   if (clear) {
     document.getElementById('driver-modal-title').textContent = 'Add Driver';
     document.getElementById('edit-driver-id').value = '';
-    document.getElementById('drv-space').value = '';
-    document.getElementById('drv-name').value = '';
-    document.getElementById('drv-phone').value = '';
-    document.getElementById('drv-rent').value = '';
-    document.getElementById('drv-status').value = 'active';
+    ['drv-space','drv-name','drv-phone','drv-rent','drv-movein','drv-moveout','drv-plate','drv-trailer'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('drv-status').value='active';
+    document.getElementById('drv-payment').value='cash';
   }
   document.getElementById('driver-modal').classList.add('open');
 }
 function closeDriverModal() { document.getElementById('driver-modal').classList.remove('open'); }
 
 async function editDriver(id) {
-  const { data } = await _sb.from('ym_drivers').select('*').eq('id', id).single();
-  if (!data) return;
-  document.getElementById('driver-modal-title').textContent = 'Edit Driver';
-  document.getElementById('edit-driver-id').value = data.id;
-  document.getElementById('drv-space').value = data.space_number;
-  document.getElementById('drv-name').value = data.name;
-  document.getElementById('drv-phone').value = data.phone || '';
-  document.getElementById('drv-rent').value = data.monthly_rent;
-  document.getElementById('drv-status').value = data.status;
+  const d = allDrivers.find(x=>x.id===id); if(!d) return;
+  document.getElementById('driver-modal-title').textContent='Edit Driver';
+  document.getElementById('edit-driver-id').value=d.id;
+  document.getElementById('drv-space').value=d.space_number;
+  document.getElementById('drv-name').value=d.name;
+  document.getElementById('drv-phone').value=d.phone||'';
+  document.getElementById('drv-rent').value=d.monthly_rent;
+  document.getElementById('drv-movein').value=d.move_in_date||'';
+  document.getElementById('drv-moveout').value=d.move_out_date||'';
+  document.getElementById('drv-plate').value=d.truck_plate||'';
+  document.getElementById('drv-trailer').value=d.trailer_number||'';
+  document.getElementById('drv-status').value=d.status;
+  document.getElementById('drv-payment').value=d.preferred_payment||'cash';
   openDriverModal(false);
 }
 
@@ -539,146 +481,215 @@ async function saveDriver() {
     space_number: document.getElementById('drv-space').value.trim(),
     name: document.getElementById('drv-name').value.trim(),
     phone: document.getElementById('drv-phone').value.trim(),
-    monthly_rent: parseFloat(document.getElementById('drv-rent').value),
-    status: document.getElementById('drv-status').value
+    monthly_rent: parseFloat(document.getElementById('drv-rent').value)||0,
+    move_in_date: document.getElementById('drv-movein').value||null,
+    move_out_date: document.getElementById('drv-moveout').value||null,
+    truck_plate: document.getElementById('drv-plate').value.trim(),
+    trailer_number: document.getElementById('drv-trailer').value.trim(),
+    status: document.getElementById('drv-status').value,
+    preferred_payment: document.getElementById('drv-payment').value
   };
-  if (!payload.space_number || !payload.name || !payload.monthly_rent) {
-    alert('Space number, name, and rent are required.'); return;
-  }
+  if (!payload.space_number||!payload.name||!payload.monthly_rent) { alert('Space, name, and rent are required.'); return; }
   let error;
-  if (id) {
-    ({ error } = await _sb.from('ym_drivers').update(payload).eq('id', id));
-  } else {
-    ({ error } = await _sb.from('ym_drivers').insert(payload));
-  }
-  if (error) { showMsg('spaces-msg', 'Error: ' + error.message, false); return; }
-  showMsg('spaces-msg', id ? 'Driver updated!' : 'Driver added!', true);
-  closeDriverModal();
-  loadSpaces();
-  loadDashboard();
+  if (id) ({ error } = await _sb.from('ym_drivers').update(payload).eq('id',id));
+  else ({ error } = await _sb.from('ym_drivers').insert(payload));
+  if (error) { showMsg('spaces-msg','Error: '+error.message,false); return; }
+  showMsg('spaces-msg', id?'Driver updated!':'Driver added!', true);
+  closeDriverModal(); await loadAllDrivers(); renderSpaces(); loadDashboard();
 }
 
 async function deleteDriver(id) {
-  if (!confirm('Remove this driver? Their payment history will remain.')) return;
-  await _sb.from('ym_drivers').delete().eq('id', id);
-  showMsg('spaces-msg', 'Driver removed.', true);
-  loadSpaces();
-  loadDashboard();
+  if (!confirm('Remove this driver? Payment and note history will remain.')) return;
+  await _sb.from('ym_drivers').delete().eq('id',id);
+  showMsg('spaces-msg','Driver removed.',true);
+  await loadAllDrivers(); renderSpaces(); loadDashboard();
 }
 
-// ── PAYMENTS ──────────────────────────────────────────────────────────────────
-function initPaymentSelectors() {
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const mSel = document.getElementById('pay-month');
-  const ySel = document.getElementById('pay-year');
-  months.forEach((m,i) => { const o = document.createElement('option'); o.value = String(i+1).padStart(2,'0'); o.textContent = m; mSel.appendChild(o); });
+function initSelectors() {
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  ['pay-month','rep-month'].forEach(id => {
+    document.getElementById(id).innerHTML = months.map((m,i)=>`<option value="${String(i+1).padStart(2,'0')}">${m}</option>`).join('');
+  });
   const now = new Date();
-  mSel.value = String(now.getMonth()+1).padStart(2,'0');
-  for (let y = now.getFullYear(); y >= now.getFullYear()-2; y--) {
-    const o = document.createElement('option'); o.value = y; o.textContent = y; ySel.appendChild(o);
-  }
+  ['pay-month','rep-month'].forEach(id=>document.getElementById(id).value=String(now.getMonth()+1).padStart(2,'0'));
+  ['pay-year','rep-year'].forEach(id => {
+    let html=''; for(let y=now.getFullYear();y>=now.getFullYear()-3;y--) html+=`<option value="${y}">${y}</option>`;
+    document.getElementById(id).innerHTML=html;
+  });
+}
+
+function setPayFilter(f, btn) {
+  payFilter = f;
+  document.querySelectorAll('#tab-payments .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderPayments();
 }
 
 async function loadPaymentsTab() {
-  const month = document.getElementById('pay-month').value;
-  const year = document.getElementById('pay-year').value;
-  const monthYear = `${year}-${month}`;
-
-  const { data } = await _sb.from('ym_payments').select('*, ym_drivers(space_number, name)').eq('month_year', monthYear).order('ym_drivers(space_number)');
-  allPayments = data || [];
-  renderPayments();
-}
-
-function setFilter(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderPayments();
+  const month=document.getElementById('pay-month').value, year=document.getElementById('pay-year').value;
+  const { data } = await _sb.from('ym_payments').select('*, ym_drivers(space_number,name,preferred_payment)').eq('month_year',`${year}-${month}`);
+  allPayments = data||[]; renderPayments();
 }
 
 function renderPayments() {
-  const tbody = document.getElementById('payments-tbody');
-  let rows = allPayments;
-  if (currentFilter !== 'all') rows = rows.filter(p => p.status === currentFilter);
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No records found. Click "Generate Month" to create payment records.</td></tr>`;
-    return;
-  }
+  let rows = payFilter==='all' ? allPayments : allPayments.filter(p=>p.status===payFilter);
+  rows.sort((a,b)=>(a.ym_drivers?.space_number||'').localeCompare(b.ym_drivers?.space_number||''));
+  const tbody = document.getElementById('pay-tbody');
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="9" class="empty-state">No records. Click "Generate Month" to create records.</td></tr>`; return; }
   tbody.innerHTML = rows.map(p => {
-    const d = p.ym_drivers;
-    const late = p.status === 'late' ? Number(p.late_fee || 35) : 0;
-    const total = Number(p.rent_amount) + late;
-    let badge = p.status === 'paid'
-      ? `<span class="badge badge-paid">PAID</span>`
-      : p.status === 'late'
-      ? `<span class="badge badge-late">LATE FEE</span>`
-      : `<span class="badge badge-unpaid">UNPAID</span>`;
-    const paidDate = p.paid_date ? new Date(p.paid_date).toLocaleDateString() : '—';
-    const actions = p.status !== 'paid'
-      ? `<button class="btn-sm btn-pay" onclick="markPaid('${p.id}','payments')">Mark Paid</button>`
-      : `<span style="color:var(--muted);font-size:12px">✓ Done</span>`;
-    return `<tr>
-      <td><strong>${d ? d.space_number : '—'}</strong></td>
-      <td>${d ? d.name : '—'}</td>
-      <td>$${Number(p.rent_amount).toFixed(2)}</td>
-      <td>${late > 0 ? '<span style="color:var(--accent2)">$' + late.toFixed(2) + '</span>' : '—'}</td>
-      <td><strong>$${total.toFixed(2)}</strong></td>
-      <td>${badge}</td>
-      <td style="color:var(--muted)">${paidDate}</td>
-      <td>${actions}</td>
-    </tr>`;
+    const d=p.ym_drivers, lf=Number(p.late_fee||0), bal=Number(p.balance_due||0);
+    const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
+    const action=p.status!=='paid'?`<button class="btn-sm btn-pay" onclick="openPayModal('${p.id}')">Record</button>`:`<span style="color:var(--green);font-size:11px">✓</span>`;
+    return `<tr><td><strong>${d?d.space_number:'—'}</strong></td><td>${d?d.name:'—'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'—'}</td><td>${bal>0?'<span style="color:var(--accent2)">$'+bal.toFixed(2)+'</span>':'—'}</td><td>${badge}</td><td style="text-transform:capitalize;color:var(--muted)">${p.payment_method||'—'}</td><td style="color:var(--muted)">${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${action}</td></tr>`;
   }).join('');
 }
 
 async function generateMonthlyPayments() {
-  const month = document.getElementById('pay-month').value;
-  const year = document.getElementById('pay-year').value;
-  const monthYear = `${year}-${month}`;
-
-  if (!confirm(`Generate payment records for ${monthYear}? Existing records won't be overwritten.`)) return;
-
-  const { data: drivers } = await _sb.from('ym_drivers').select('*').eq('status','active');
-  if (!drivers || drivers.length === 0) { showMsg('payments-msg','No active drivers found.',false); return; }
-
-  const now = new Date();
-  const day = now.getDate();
-  const isCurrentMonth = now.getFullYear() === parseInt(year) && (now.getMonth()+1) === parseInt(month);
-
-  const records = drivers.map(d => ({
-    driver_id: d.id,
-    month_year: monthYear,
-    rent_amount: d.monthly_rent,
-    late_fee: isCurrentMonth && day > 5 ? 35 : 0,
-    status: isCurrentMonth && day > 5 ? 'late' : 'unpaid',
-    paid_date: null,
-    amount_paid: 0
-  }));
-
-  // Only insert where record doesn't exist
-  for (const r of records) {
-    const { data: existing } = await _sb.from('ym_payments').select('id').eq('driver_id', r.driver_id).eq('month_year', monthYear);
-    if (!existing || existing.length === 0) {
-      await _sb.from('ym_payments').insert(r);
+  const month=document.getElementById('pay-month').value, year=document.getElementById('pay-year').value, monthYear=`${year}-${month}`;
+  if (!confirm(`Generate payment records for ${monthYear}?`)) return;
+  const active=allDrivers.filter(d=>d.status==='active');
+  if (!active.length) { showMsg('payments-msg','No active drivers.',false); return; }
+  const now=new Date(), day=now.getDate(), isCurrent=now.getFullYear()===parseInt(year)&&(now.getMonth()+1)===parseInt(month);
+  for (const d of active) {
+    const { data: ex } = await _sb.from('ym_payments').select('id').eq('driver_id',d.id).eq('month_year',monthYear);
+    if (!ex||!ex.length) {
+      const isLate=isCurrent&&day>5;
+      await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, rent_amount:d.monthly_rent, late_fee:isLate?35:0, status:isLate?'late':'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent+(isLate?35:0) });
     }
   }
-  showMsg('payments-msg', `Payment records generated for ${monthYear}.`, true);
-  loadPaymentsTab();
+  showMsg('payments-msg',`Records generated for ${monthYear}.`,true); loadPaymentsTab();
 }
 
-async function markPaid(id, source) {
-  const today = new Date().toISOString().split('T')[0];
-  const { data: rec } = await _sb.from('ym_payments').select('rent_amount, late_fee').eq('id', id).single();
-  const total = rec ? Number(rec.rent_amount) + Number(rec.late_fee || 0) : 0;
-  await _sb.from('ym_payments').update({ status: 'paid', paid_date: today, amount_paid: total }).eq('id', id);
-  if (source === 'dashboard') { loadDashboard(); }
-  else { loadPaymentsTab(); loadDashboard(); }
+function openPayModal(id) {
+  document.getElementById('pay-modal-id').value=id;
+  document.getElementById('pay-type').value='full';
+  document.getElementById('pay-method').value='cash';
+  document.getElementById('partial-amount').value='';
+  document.getElementById('pay-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pay-notes').value='';
+  document.getElementById('partial-row').style.display='none';
+  document.getElementById('pay-modal').classList.add('open');
+}
+function closePayModal() { document.getElementById('pay-modal').classList.remove('open'); }
+function togglePayType() { document.getElementById('partial-row').style.display=document.getElementById('pay-type').value==='partial'?'block':'none'; }
+
+async function recordPayment() {
+  const id=document.getElementById('pay-modal-id').value, type=document.getElementById('pay-type').value;
+  const method=document.getElementById('pay-method').value, date=document.getElementById('pay-date').value, notes=document.getElementById('pay-notes').value;
+  const rec=allPayments.find(p=>p.id===id); if(!rec) return;
+  const total=Number(rec.rent_amount)+Number(rec.late_fee||0);
+  let update={ payment_method:method, paid_date:date, notes };
+  if (type==='full') { update.status='paid'; update.amount_paid=total; update.balance_due=0; }
+  else { const partial=parseFloat(document.getElementById('partial-amount').value)||0; update.status='partial'; update.amount_paid=partial; update.balance_due=Math.max(total-partial,0); }
+  await _sb.from('ym_payments').update(update).eq('id',id);
+  closePayModal(); loadPaymentsTab(); loadDashboard(); showMsg('payments-msg','Payment recorded!',true);
 }
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
+function setNoteFilter(f, btn) {
+  noteFilter=f;
+  document.querySelectorAll('#tab-notes .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderNotes();
+}
+
+async function loadNotes() {
+  const driverId=document.getElementById('notes-driver-filter').value;
+  let q=_sb.from('ym_notes').select('*, ym_drivers(space_number,name)').order('note_date',{ascending:false});
+  if (driverId) q=q.eq('driver_id',driverId);
+  const { data } = await q; allNotes=data||[]; renderNotes();
+}
+
+function renderNotes() {
+  let rows=noteFilter==='all'?allNotes:allNotes.filter(n=>n.category===noteFilter);
+  const container=document.getElementById('notes-list');
+  if (!rows.length) { container.innerHTML=`<div class="empty-state">No notes found.</div>`; return; }
+  container.innerHTML=rows.map(n => {
+    const d=n.ym_drivers, cls=n.category==='incident'||n.category==='warning'?n.category:n.category==='payment'?'payment':'';
+    return `<div class="note-item ${cls}"><div class="note-meta"><strong>${d?d.space_number+' — '+d.name:'Unknown'}</strong><span>·</span><span style="text-transform:capitalize;color:var(--accent)">${n.category}</span><span>·</span><span>${new Date(n.note_date+'T12:00:00').toLocaleDateString()}</span><button class="btn-sm btn-del" style="margin-left:auto" onclick="deleteNote('${n.id}')">Del</button></div><div class="note-text">${n.note}</div></div>`;
+  }).join('');
+}
+
+function openNoteModal() {
+  document.getElementById('note-driver').value='';
+  document.getElementById('note-category').value='general';
+  document.getElementById('note-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('note-text').value='';
+  document.getElementById('note-modal').classList.add('open');
+}
+function closeNoteModal() { document.getElementById('note-modal').classList.remove('open'); }
+function quickNote(driverId) { openNoteModal(); document.getElementById('note-driver').value=driverId; }
+
+async function saveNote() {
+  const driverId=document.getElementById('note-driver').value, note=document.getElementById('note-text').value.trim();
+  if (!driverId||!note) { alert('Please select a driver and enter a note.'); return; }
+  await _sb.from('ym_notes').insert({ driver_id:driverId, category:document.getElementById('note-category').value, note_date:document.getElementById('note-date').value, note });
+  closeNoteModal(); showMsg('notes-msg','Note saved!',true); loadNotes();
+}
+
+async function deleteNote(id) { if(!confirm('Delete this note?')) return; await _sb.from('ym_notes').delete().eq('id',id); loadNotes(); }
+
+async function loadReports() {
+  const month=document.getElementById('rep-month').value, year=document.getElementById('rep-year').value, monthYear=`${year}-${month}`;
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthName=months[parseInt(month)-1]+' '+year;
+  const { data: payments } = await _sb.from('ym_payments').select('*, ym_drivers(space_number,name)').eq('month_year',monthYear);
+  const { data: yearData } = await _sb.from('ym_payments').select('*').gte('month_year',`${year}-01`).lte('month_year',`${year}-12`);
+  const pList=payments||[], yList=yearData||[];
+  const paid=pList.filter(p=>p.status==='paid');
+  const totalRev=paid.reduce((s,p)=>s+Number(p.amount_paid||0),0);
+  const totalLF=paid.filter(p=>Number(p.late_fee)>0).reduce((s,p)=>s+Number(p.late_fee),0);
+  const outstanding=pList.filter(p=>p.status!=='paid').reduce((s,p)=>s+Number(p.balance_due||p.rent_amount||0),0);
+  const yearRev=yList.filter(p=>p.status==='paid').reduce((s,p)=>s+Number(p.amount_paid||0),0);
+  const yearLF=yList.filter(p=>p.status==='paid'&&Number(p.late_fee)>0).reduce((s,p)=>s+Number(p.late_fee),0);
+  const active=allDrivers.filter(d=>d.status==='active').length;
+  const vacant=allDrivers.filter(d=>d.status==='vacant').length;
+  const occupancy=allDrivers.length?Math.round(active/allDrivers.length*100):0;
+
+  document.getElementById('reports-content').innerHTML=`
+    <div style="font-family:var(--font-head);font-size:26px;font-weight:800;letter-spacing:2px;margin-bottom:20px;text-transform:uppercase;border-bottom:3px solid var(--accent);padding-bottom:10px;">Report: ${monthName}</div>
+    <div class="report-grid">
+      <div class="report-card"><div class="report-card-title">Monthly Revenue</div>
+        <div class="report-row"><span>Rent Collected</span><strong>$${(totalRev-totalLF).toFixed(2)}</strong></div>
+        <div class="report-row"><span>Late Fees Collected</span><strong style="color:var(--accent2)">$${totalLF.toFixed(2)}</strong></div>
+        <div class="report-row"><span>Outstanding Balance</span><strong style="color:var(--accent2)">$${outstanding.toFixed(2)}</strong></div>
+        <div class="report-row"><span>Paid Spaces</span><strong>${paid.length} of ${pList.length}</strong></div>
+        <div class="report-total"><span>Total Collected</span><span style="color:var(--green)">$${totalRev.toFixed(2)}</span></div>
+      </div>
+      <div class="report-card"><div class="report-card-title">Occupancy — ${monthName}</div>
+        <div class="report-row"><span>Active Spaces</span><strong style="color:var(--green)">${active}</strong></div>
+        <div class="report-row"><span>Vacant Spaces</span><strong style="color:#2563eb">${vacant}</strong></div>
+        <div class="report-row"><span>Inactive</span><strong style="color:var(--muted)">${allDrivers.filter(d=>d.status==='inactive').length}</strong></div>
+        <div class="report-row"><span>Total Spaces</span><strong>${allDrivers.length}</strong></div>
+        <div class="report-total"><span>Occupancy Rate</span><span style="color:var(--green)">${occupancy}%</span></div>
+      </div>
+      <div class="report-card"><div class="report-card-title">Year-to-Date ${year}</div>
+        <div class="report-row"><span>Total Revenue</span><strong>$${yearRev.toFixed(2)}</strong></div>
+        <div class="report-row"><span>Late Fees Collected</span><strong style="color:var(--accent2)">$${yearLF.toFixed(2)}</strong></div>
+        <div class="report-row"><span>Total Payments Recorded</span><strong>${yList.filter(p=>p.status==='paid').length}</strong></div>
+        <div class="report-total"><span>YTD Total</span><span style="color:var(--green)">$${yearRev.toFixed(2)}</span></div>
+      </div>
+    </div>
+    <div class="section-header"><div class="section-title">Payment Detail — ${monthName}</div></div>
+    <div class="table-wrap" style="margin-bottom:24px">
+      <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Rent</th><th>Late Fee</th><th>Total</th><th>Status</th><th>Method</th><th>Paid Date</th></tr></thead>
+      <tbody>${pList.sort((a,b)=>(a.ym_drivers?.space_number||'').localeCompare(b.ym_drivers?.space_number||'')).map(p=>{
+        const d=p.ym_drivers,lf=Number(p.late_fee||0);
+        const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
+        return `<tr><td><strong>${d?d.space_number:'—'}</strong></td><td>${d?d.name:'—'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'$'+lf.toFixed(2):'—'}</td><td><strong>$${(Number(p.rent_amount)+lf).toFixed(2)}</strong></td><td>${badge}</td><td style="text-transform:capitalize">${p.payment_method||'—'}</td><td>${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'—'}</td></tr>`;
+      }).join('')}</tbody></table>
+    </div>
+    <div class="section-header"><div class="section-title">Space Tenant Directory</div></div>
+    <div class="table-wrap">
+      <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Monthly Rent</th><th>Move-In</th><th>Truck Plate</th><th>Trailer #</th><th>Pmt Method</th><th>Status</th></tr></thead>
+      <tbody>${allDrivers.map(d=>{
+        const bc=d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
+        return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.phone||'—'}</td><td>$${Number(d.monthly_rent).toFixed(2)}</td><td>${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td>${d.trailer_number||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td></tr>`;
+      }).join('')}</tbody></table>
+    </div>`;
+}
+
 function showMsg(id, text, ok) {
-  const el = document.getElementById(id);
-  el.innerHTML = `<div class="msg ${ok ? 'msg-success' : 'msg-error'}">${text}</div>`;
-  setTimeout(() => el.innerHTML = '', 4000);
+  const el=document.getElementById(id);
+  el.innerHTML=`<div class="msg ${ok?'msg-success':'msg-error'}">${text}</div>`;
+  setTimeout(()=>el.innerHTML='',4000);
 }
 </script>
 </body>
