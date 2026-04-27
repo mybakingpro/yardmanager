@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Yard Manager Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2333;
+    --border: #2a3050;
+    --accent: #f59e0b;
+    --accent2: #ef4444;
+    --green: #22c55e;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --font-head: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; }
+
+  /* LOGIN */
+  #login-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    background: radial-gradient(ellipse at 30% 50%, #1e2a1a 0%, #0f1117 60%);
+  }
+  .login-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 48px 40px; width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .login-logo { font-family: var(--font-head); font-size: 32px; font-weight: 800;
+    color: var(--accent); letter-spacing: 2px; margin-bottom: 4px; }
+  .login-sub { color: var(--muted); font-size: 13px; margin-bottom: 36px; text-transform: uppercase; letter-spacing: 1px; }
+  .login-box input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 12px 16px; border-radius: 3px;
+    font-family: var(--font-body); font-size: 15px; margin-bottom: 12px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .login-box input:focus { border-color: var(--accent); }
+  .btn-primary {
+    width: 100%; background: var(--accent); color: #000; font-family: var(--font-head);
+    font-size: 18px; font-weight: 700; letter-spacing: 2px; border: none;
+    padding: 13px; border-radius: 3px; cursor: pointer; transition: opacity 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .login-error { color: var(--accent2); font-size: 13px; margin-top: 10px; text-align: center; }
+
+  /* APP SHELL */
+  #app-screen { display: none; flex-direction: column; min-height: 100vh; }
+  .topbar {
+    background: var(--surface); border-bottom: 2px solid var(--accent);
+    padding: 0 24px; display: flex; align-items: center; gap: 20px; height: 56px;
+  }
+  .topbar-logo { font-family: var(--font-head); font-size: 22px; font-weight: 800;
+    color: var(--accent); letter-spacing: 2px; margin-right: 20px; }
+  .nav-tabs { display: flex; gap: 4px; flex: 1; }
+  .nav-tab {
+    padding: 8px 18px; font-family: var(--font-head); font-size: 15px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase; background: transparent;
+    border: none; color: var(--muted); cursor: pointer; border-radius: 3px;
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: var(--text); background: var(--surface2); }
+  .nav-tab.active { color: var(--accent); background: var(--surface2); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-badge { font-size: 12px; color: var(--muted); }
+  .btn-signout {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    padding: 6px 14px; border-radius: 3px; cursor: pointer; font-size: 12px;
+    font-family: var(--font-body); transition: all 0.2s;
+  }
+  .btn-signout:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .main-content { flex: 1; padding: 28px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+  /* TABS */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 20px 24px; position: relative; overflow: hidden;
+  }
+  .stat-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+  .stat-card.red::before { background: var(--accent2); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.blue::before { background: #3b82f6; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 8px; }
+  .stat-value { font-family: var(--font-head); font-size: 36px; font-weight: 800; line-height: 1; }
+  .stat-card.red .stat-value { color: var(--accent2); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.blue .stat-value { color: #3b82f6; }
+
+  /* SECTION HEADER */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .section-title { font-family: var(--font-head); font-size: 24px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase; }
+  .btn-add {
+    background: var(--accent); color: #000; font-family: var(--font-head);
+    font-size: 14px; font-weight: 700; letter-spacing: 1px; border: none;
+    padding: 9px 20px; border-radius: 3px; cursor: pointer; text-transform: uppercase;
+    transition: opacity 0.2s;
+  }
+  .btn-add:hover { opacity: 0.85; }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    background: var(--surface2); text-align: left; padding: 10px 14px;
+    font-family: var(--font-head); font-size: 12px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 11px 14px; border-bottom: 1px solid rgba(42,48,80,0.5);
+    font-size: 14px; vertical-align: middle;
+  }
+  .data-table tr:hover td { background: rgba(245,158,11,0.04); }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 2px;
+    font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    font-family: var(--font-head);
+  }
+  .badge-paid { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-unpaid { background: rgba(239,68,68,0.15); color: var(--accent2); }
+  .badge-late { background: rgba(239,68,68,0.25); color: #ff6b6b; border: 1px solid rgba(239,68,68,0.3); }
+  .badge-active { background: rgba(34,197,94,0.1); color: var(--green); }
+  .badge-inactive { background: rgba(100,116,139,0.2); color: var(--muted); }
+
+  /* ACTION BUTTONS */
+  .btn-sm {
+    padding: 5px 12px; font-size: 12px; font-family: var(--font-head); font-weight: 600;
+    letter-spacing: 0.5px; border-radius: 2px; cursor: pointer; border: none;
+    transition: opacity 0.2s; text-transform: uppercase;
+  }
+  .btn-pay { background: rgba(34,197,94,0.2); color: var(--green); }
+  .btn-pay:hover { background: rgba(34,197,94,0.3); }
+  .btn-edit { background: rgba(245,158,11,0.15); color: var(--accent); }
+  .btn-edit:hover { background: rgba(245,158,11,0.25); }
+  .btn-del { background: rgba(239,68,68,0.1); color: var(--accent2); }
+  .btn-del:hover { background: rgba(239,68,68,0.2); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent);
+    border-radius: 4px; padding: 32px; width: 460px; max-width: 95vw;
+  }
+  .modal-title { font-family: var(--font-head); font-size: 22px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px; }
+  .form-row { margin-bottom: 16px; }
+  .form-row label { display: block; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
+  .form-row input, .form-row select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 14px; border-radius: 3px;
+    font-family: var(--font-body); font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-row input:focus, .form-row select:focus { border-color: var(--accent); }
+  .form-row select option { background: var(--surface); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+  .btn-cancel {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    padding: 9px 20px; border-radius: 3px; cursor: pointer; font-family: var(--font-head);
+    font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .btn-cancel:hover { border-color: var(--muted); }
+  .btn-save {
+    background: var(--accent); color: #000; font-family: var(--font-head);
+    font-size: 14px; font-weight: 700; letter-spacing: 1px; border: none;
+    padding: 9px 24px; border-radius: 3px; cursor: pointer; text-transform: uppercase;
+  }
+
+  /* MONTH SELECTOR */
+  .month-bar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 12px 18px;
+  }
+  .month-bar label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .month-bar select {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 14px; border-radius: 3px; font-family: var(--font-body); font-size: 14px;
+    outline: none; cursor: pointer;
+  }
+  .btn-load {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 16px; border-radius: 3px; cursor: pointer; font-family: var(--font-head);
+    font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn-load:hover { border-color: var(--accent); color: var(--accent); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .big { font-family: var(--font-head); font-size: 48px; color: var(--border); margin-bottom: 12px; }
+
+  .msg { font-size: 13px; padding: 10px 14px; border-radius: 3px; margin-bottom: 14px; }
+  .msg-success { background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+  .msg-error { background: rgba(239,68,68,0.1); color: var(--accent2); border: 1px solid rgba(239,68,68,0.2); }
+
+  /* PAYMENTS FILTER */
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 16px; border-radius: 2px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; font-family: var(--font-head);
+    font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .filter-btn.active, .filter-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(245,158,11,0.08); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">YARD MGR</div>
+    <div class="login-sub">Truck Yard Payment System</div>
+    <input type="email" id="login-email" placeholder="Email address"/>
+    <input type="password" id="login-pass" placeholder="Password"/>
+    <button class="btn-primary" onclick="doLogin()">ENTER</button>
+    <div class="login-error" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-logo">⚡ YARD MGR</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
+      <button class="nav-tab" onclick="showTab('spaces')">Spaces / Drivers</button>
+      <button class="nav-tab" onclick="showTab('payments')">Payments</button>
+    </div>
+    <div class="topbar-right">
+      <span class="user-badge" id="user-label"></span>
+      <button class="btn-signout" onclick="doSignOut()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+
+    <!-- DASHBOARD TAB -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="stats-row">
+        <div class="stat-card green">
+          <div class="stat-label">Paid This Month</div>
+          <div class="stat-value" id="stat-paid">—</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Unpaid / Late</div>
+          <div class="stat-value" id="stat-unpaid">—</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Active Spaces</div>
+          <div class="stat-value" id="stat-spaces">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Revenue This Month</div>
+          <div class="stat-value" id="stat-revenue">—</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title">Late / Unpaid This Month</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Space</th>
+            <th>Driver</th>
+            <th>Phone</th>
+            <th>Rent</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="dashboard-tbody">
+          <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SPACES TAB -->
+    <div class="tab-panel" id="tab-spaces">
+      <div class="section-header">
+        <div class="section-title">Spaces &amp; Drivers</div>
+        <button class="btn-add" onclick="openDriverModal()">+ Add Driver</button>
+      </div>
+      <div id="spaces-msg"></div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Space #</th>
+            <th>Driver Name</th>
+            <th>Phone</th>
+            <th>Monthly Rent</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="spaces-tbody">
+          <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAYMENTS TAB -->
+    <div class="tab-panel" id="tab-payments">
+      <div class="month-bar">
+        <label>Month:</label>
+        <select id="pay-month"></select>
+        <label>Year:</label>
+        <select id="pay-year"></select>
+        <button class="btn-load" onclick="loadPaymentsTab()">Load</button>
+        <button class="btn-add" style="margin-left:auto" onclick="generateMonthlyPayments()">Generate Month</button>
+      </div>
+      <div id="payments-msg"></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('paid',this)">Paid</button>
+        <button class="filter-btn" onclick="setFilter('unpaid',this)">Unpaid</button>
+        <button class="filter-btn" onclick="setFilter('late',this)">Late Fee</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Space</th>
+            <th>Driver</th>
+            <th>Rent</th>
+            <th>Late Fee</th>
+            <th>Total Due</th>
+            <th>Status</th>
+            <th>Paid Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="payments-tbody">
+          <tr><td colspan="8" class="empty-state">Select a month and click Load</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- DRIVER MODAL -->
+<div class="modal-overlay" id="driver-modal">
+  <div class="modal">
+    <div class="modal-title" id="driver-modal-title">Add Driver</div>
+    <input type="hidden" id="edit-driver-id"/>
+    <div class="form-row">
+      <label>Space Number</label>
+      <input type="text" id="drv-space" placeholder="e.g. A-12"/>
+    </div>
+    <div class="form-row">
+      <label>Driver Name</label>
+      <input type="text" id="drv-name" placeholder="Full name"/>
+    </div>
+    <div class="form-row">
+      <label>Phone Number</label>
+      <input type="text" id="drv-phone" placeholder="(555) 555-5555"/>
+    </div>
+    <div class="form-row">
+      <label>Monthly Rent ($)</label>
+      <input type="number" id="drv-rent" placeholder="450"/>
+    </div>
+    <div class="form-row">
+      <label>Status</label>
+      <select id="drv-status">
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDriverModal()">Cancel</button>
+      <button class="btn-save" onclick="saveDriver()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://bpchubmwddaibfaxdglk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwY2h1Ym13ZGRhaWJmYXhkZ2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDE5ODYsImV4cCI6MjA5MTkxNzk4Nn0.Df0DMHPnCxF5YRmHpz1_cTZ1aKufgzkJTWV8sxnFpck';
+const ALLOWED_EMAILS = ['coachjackiegrant@gmail.com']; // add owner email here
+
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false }
+});
+
+let currentUser = null;
+let allPayments = [];
+let currentFilter = 'all';
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  document.getElementById('login-err').textContent = '';
+
+  if (!ALLOWED_EMAILS.includes(email)) {
+    document.getElementById('login-err').textContent = 'Access denied. Unauthorized email.';
+    return;
+  }
+
+  const { data, error } = await _sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { document.getElementById('login-err').textContent = error.message; return; }
+
+  currentUser = data.user;
+  document.getElementById('user-label').textContent = email;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+  loadDashboard();
+  loadSpaces();
+  initPaymentSelectors();
+}
+
+async function doSignOut() {
+  await _sb.auth.signOut();
+  location.reload();
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  const { data: payments } = await _sb.from('ym_payments').select('*, ym_drivers(space_number, name, phone)').eq('month_year', month);
+  const { data: drivers } = await _sb.from('ym_drivers').select('*').eq('status','active');
+
+  if (!payments) return;
+
+  const paid = payments.filter(p => p.status === 'paid').length;
+  const unpaid = payments.filter(p => p.status !== 'paid').length;
+  const revenue = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount_paid || 0), 0);
+
+  document.getElementById('stat-paid').textContent = paid;
+  document.getElementById('stat-unpaid').textContent = unpaid;
+  document.getElementById('stat-spaces').textContent = drivers ? drivers.length : '—';
+  document.getElementById('stat-revenue').textContent = '$' + revenue.toLocaleString('en-US', {minimumFractionDigits:2});
+
+  const tbody = document.getElementById('dashboard-tbody');
+  const lateRows = payments.filter(p => p.status !== 'paid');
+  if (lateRows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--green)">✓ All spaces paid this month!</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lateRows.map(p => {
+    const d = p.ym_drivers;
+    const badge = p.status === 'late' ? `<span class="badge badge-late">LATE FEE</span>` : `<span class="badge badge-unpaid">UNPAID</span>`;
+    return `<tr>
+      <td><strong>${d ? d.space_number : '—'}</strong></td>
+      <td>${d ? d.name : '—'}</td>
+      <td>${d ? d.phone : '—'}</td>
+      <td>$${Number(p.rent_amount).toFixed(2)}</td>
+      <td>${badge}</td>
+      <td><button class="btn-sm btn-pay" onclick="markPaid('${p.id}','dashboard')">Mark Paid</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── SPACES ────────────────────────────────────────────────────────────────────
+async function loadSpaces() {
+  const { data, error } = await _sb.from('ym_drivers').select('*').order('space_number');
+  const tbody = document.getElementById('spaces-tbody');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="big">🚛</div>No drivers yet. Add one!</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(d => `<tr>
+    <td><strong>${d.space_number}</strong></td>
+    <td>${d.name}</td>
+    <td>${d.phone || '—'}</td>
+    <td>$${Number(d.monthly_rent).toFixed(2)}</td>
+    <td><span class="badge ${d.status === 'active' ? 'badge-active' : 'badge-inactive'}">${d.status}</span></td>
+    <td style="display:flex;gap:6px;">
+      <button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button>
+      <button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Remove</button>
+    </td>
+  </tr>`).join('');
+}
+
+function openDriverModal(clear=true) {
+  if (clear) {
+    document.getElementById('driver-modal-title').textContent = 'Add Driver';
+    document.getElementById('edit-driver-id').value = '';
+    document.getElementById('drv-space').value = '';
+    document.getElementById('drv-name').value = '';
+    document.getElementById('drv-phone').value = '';
+    document.getElementById('drv-rent').value = '';
+    document.getElementById('drv-status').value = 'active';
+  }
+  document.getElementById('driver-modal').classList.add('open');
+}
+function closeDriverModal() { document.getElementById('driver-modal').classList.remove('open'); }
+
+async function editDriver(id) {
+  const { data } = await _sb.from('ym_drivers').select('*').eq('id', id).single();
+  if (!data) return;
+  document.getElementById('driver-modal-title').textContent = 'Edit Driver';
+  document.getElementById('edit-driver-id').value = data.id;
+  document.getElementById('drv-space').value = data.space_number;
+  document.getElementById('drv-name').value = data.name;
+  document.getElementById('drv-phone').value = data.phone || '';
+  document.getElementById('drv-rent').value = data.monthly_rent;
+  document.getElementById('drv-status').value = data.status;
+  openDriverModal(false);
+}
+
+async function saveDriver() {
+  const id = document.getElementById('edit-driver-id').value;
+  const payload = {
+    space_number: document.getElementById('drv-space').value.trim(),
+    name: document.getElementById('drv-name').value.trim(),
+    phone: document.getElementById('drv-phone').value.trim(),
+    monthly_rent: parseFloat(document.getElementById('drv-rent').value),
+    status: document.getElementById('drv-status').value
+  };
+  if (!payload.space_number || !payload.name || !payload.monthly_rent) {
+    alert('Space number, name, and rent are required.'); return;
+  }
+  let error;
+  if (id) {
+    ({ error } = await _sb.from('ym_drivers').update(payload).eq('id', id));
+  } else {
+    ({ error } = await _sb.from('ym_drivers').insert(payload));
+  }
+  if (error) { showMsg('spaces-msg', 'Error: ' + error.message, false); return; }
+  showMsg('spaces-msg', id ? 'Driver updated!' : 'Driver added!', true);
+  closeDriverModal();
+  loadSpaces();
+  loadDashboard();
+}
+
+async function deleteDriver(id) {
+  if (!confirm('Remove this driver? Their payment history will remain.')) return;
+  await _sb.from('ym_drivers').delete().eq('id', id);
+  showMsg('spaces-msg', 'Driver removed.', true);
+  loadSpaces();
+  loadDashboard();
+}
+
+// ── PAYMENTS ──────────────────────────────────────────────────────────────────
+function initPaymentSelectors() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const mSel = document.getElementById('pay-month');
+  const ySel = document.getElementById('pay-year');
+  months.forEach((m,i) => { const o = document.createElement('option'); o.value = String(i+1).padStart(2,'0'); o.textContent = m; mSel.appendChild(o); });
+  const now = new Date();
+  mSel.value = String(now.getMonth()+1).padStart(2,'0');
+  for (let y = now.getFullYear(); y >= now.getFullYear()-2; y--) {
+    const o = document.createElement('option'); o.value = y; o.textContent = y; ySel.appendChild(o);
+  }
+}
+
+async function loadPaymentsTab() {
+  const month = document.getElementById('pay-month').value;
+  const year = document.getElementById('pay-year').value;
+  const monthYear = `${year}-${month}`;
+
+  const { data } = await _sb.from('ym_payments').select('*, ym_drivers(space_number, name)').eq('month_year', monthYear).order('ym_drivers(space_number)');
+  allPayments = data || [];
+  renderPayments();
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPayments();
+}
+
+function renderPayments() {
+  const tbody = document.getElementById('payments-tbody');
+  let rows = allPayments;
+  if (currentFilter !== 'all') rows = rows.filter(p => p.status === currentFilter);
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No records found. Click "Generate Month" to create payment records.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(p => {
+    const d = p.ym_drivers;
+    const late = p.status === 'late' ? Number(p.late_fee || 35) : 0;
+    const total = Number(p.rent_amount) + late;
+    let badge = p.status === 'paid'
+      ? `<span class="badge badge-paid">PAID</span>`
+      : p.status === 'late'
+      ? `<span class="badge badge-late">LATE FEE</span>`
+      : `<span class="badge badge-unpaid">UNPAID</span>`;
+    const paidDate = p.paid_date ? new Date(p.paid_date).toLocaleDateString() : '—';
+    const actions = p.status !== 'paid'
+      ? `<button class="btn-sm btn-pay" onclick="markPaid('${p.id}','payments')">Mark Paid</button>`
+      : `<span style="color:var(--muted);font-size:12px">✓ Done</span>`;
+    return `<tr>
+      <td><strong>${d ? d.space_number : '—'}</strong></td>
+      <td>${d ? d.name : '—'}</td>
+      <td>$${Number(p.rent_amount).toFixed(2)}</td>
+      <td>${late > 0 ? '<span style="color:var(--accent2)">$' + late.toFixed(2) + '</span>' : '—'}</td>
+      <td><strong>$${total.toFixed(2)}</strong></td>
+      <td>${badge}</td>
+      <td style="color:var(--muted)">${paidDate}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function generateMonthlyPayments() {
+  const month = document.getElementById('pay-month').value;
+  const year = document.getElementById('pay-year').value;
+  const monthYear = `${year}-${month}`;
+
+  if (!confirm(`Generate payment records for ${monthYear}? Existing records won't be overwritten.`)) return;
+
+  const { data: drivers } = await _sb.from('ym_drivers').select('*').eq('status','active');
+  if (!drivers || drivers.length === 0) { showMsg('payments-msg','No active drivers found.',false); return; }
+
+  const now = new Date();
+  const day = now.getDate();
+  const isCurrentMonth = now.getFullYear() === parseInt(year) && (now.getMonth()+1) === parseInt(month);
+
+  const records = drivers.map(d => ({
+    driver_id: d.id,
+    month_year: monthYear,
+    rent_amount: d.monthly_rent,
+    late_fee: isCurrentMonth && day > 5 ? 35 : 0,
+    status: isCurrentMonth && day > 5 ? 'late' : 'unpaid',
+    paid_date: null,
+    amount_paid: 0
+  }));
+
+  // Only insert where record doesn't exist
+  for (const r of records) {
+    const { data: existing } = await _sb.from('ym_payments').select('id').eq('driver_id', r.driver_id).eq('month_year', monthYear);
+    if (!existing || existing.length === 0) {
+      await _sb.from('ym_payments').insert(r);
+    }
+  }
+  showMsg('payments-msg', `Payment records generated for ${monthYear}.`, true);
+  loadPaymentsTab();
+}
+
+async function markPaid(id, source) {
+  const today = new Date().toISOString().split('T')[0];
+  const { data: rec } = await _sb.from('ym_payments').select('rent_amount, late_fee').eq('id', id).single();
+  const total = rec ? Number(rec.rent_amount) + Number(rec.late_fee || 0) : 0;
+  await _sb.from('ym_payments').update({ status: 'paid', paid_date: today, amount_paid: total }).eq('id', id);
+  if (source === 'dashboard') { loadDashboard(); }
+  else { loadPaymentsTab(); loadDashboard(); }
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function showMsg(id, text, ok) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="msg ${ok ? 'msg-success' : 'msg-error'}">${text}</div>`;
+  setTimeout(() => el.innerHTML = '', 4000);
+}
+</script>
+</body>
+</html>
