@@ -216,7 +216,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       <div id="spaces-msg"></div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Rent/Mo</th><th>Move In</th><th>Truck Plate</th><th>Trailer #</th><th>Pmt Method</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Rent/Mo</th><th>Move In</th><th>Truck Plate</th><th>Email</th><th>Pmt Method</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="spaces-tbody"><tr><td colspan="10" class="empty-state">Loading...</td></tr></tbody>
         </table>
       </div>
@@ -299,7 +299,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       <div class="form-row"><label>Move-In Date</label><input type="date" id="drv-movein"/></div>
       <div class="form-row"><label>Move-Out Date</label><input type="date" id="drv-moveout"/></div>
       <div class="form-row"><label>Truck Plate</label><input type="text" id="drv-plate" placeholder="ABC-1234"/></div>
-      <div class="form-row"><label>Trailer Number</label><input type="text" id="drv-trailer" placeholder="Trailer #"/></div>
+      <div class="form-row"><label>Email Address</label><input type="email" id="drv-email" placeholder="driver@email.com"/></div>
       <div class="form-row"><label>Preferred Payment</label><select id="drv-payment"><option value="cash">Cash</option><option value="zelle">Zelle</option><option value="check">Check</option><option value="venmo">Venmo</option><option value="other">Other</option></select></div>
     </div>
     <div class="modal-actions">
@@ -442,7 +442,7 @@ function renderSpaces() {
   if (!rows.length) { tbody.innerHTML=`<tr><td colspan="10" class="empty-state">No drivers found.</td></tr>`; return; }
   tbody.innerHTML = rows.map(d => {
     const bc = d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
-    return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.phone||'—'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td style="color:var(--muted)">${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td>${d.trailer_number||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
+    return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.phone||'—'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td style="color:var(--muted)">${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td style="color:var(--muted)">${d.email||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
   }).join('');
 }
 
@@ -450,7 +450,7 @@ function openDriverModal(clear=true) {
   if (clear) {
     document.getElementById('driver-modal-title').textContent = 'Add Driver';
     document.getElementById('edit-driver-id').value = '';
-    ['drv-space','drv-name','drv-phone','drv-rent','drv-movein','drv-moveout','drv-plate','drv-trailer'].forEach(id=>document.getElementById(id).value='');
+    ['drv-space','drv-name','drv-phone','drv-rent','drv-movein','drv-moveout','drv-plate','drv-email'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('drv-status').value='active';
     document.getElementById('drv-payment').value='cash';
   }
@@ -469,7 +469,7 @@ async function editDriver(id) {
   document.getElementById('drv-movein').value=d.move_in_date||'';
   document.getElementById('drv-moveout').value=d.move_out_date||'';
   document.getElementById('drv-plate').value=d.truck_plate||'';
-  document.getElementById('drv-trailer').value=d.trailer_number||'';
+  document.getElementById('drv-email').value=d.email||'';
   document.getElementById('drv-status').value=d.status;
   document.getElementById('drv-payment').value=d.preferred_payment||'cash';
   openDriverModal(false);
@@ -485,7 +485,7 @@ async function saveDriver() {
     move_in_date: document.getElementById('drv-movein').value||null,
     move_out_date: document.getElementById('drv-moveout').value||null,
     truck_plate: document.getElementById('drv-plate').value.trim(),
-    trailer_number: document.getElementById('drv-trailer').value.trim(),
+    email: document.getElementById('drv-email').value.trim(),
     status: document.getElementById('drv-status').value,
     preferred_payment: document.getElementById('drv-payment').value
   };
@@ -678,10 +678,10 @@ async function loadReports() {
     </div>
     <div class="section-header"><div class="section-title">Space Tenant Directory</div></div>
     <div class="table-wrap">
-      <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Monthly Rent</th><th>Move-In</th><th>Truck Plate</th><th>Trailer #</th><th>Pmt Method</th><th>Status</th></tr></thead>
+      <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Email</th><th>Monthly Rent</th><th>Move-In</th><th>Truck Plate</th><th>Pmt Method</th><th>Status</th></tr></thead>
       <tbody>${allDrivers.map(d=>{
         const bc=d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
-        return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.phone||'—'}</td><td>$${Number(d.monthly_rent).toFixed(2)}</td><td>${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td>${d.trailer_number||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td></tr>`;
+        return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.phone||'—'}</td><td>${d.email||'—'}</td><td>$${Number(d.monthly_rent).toFixed(2)}</td><td>${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td></tr>`;
       }).join('')}</tbody></table>
     </div>`;
 }
