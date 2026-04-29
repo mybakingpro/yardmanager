@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -691,6 +691,13 @@ function showMsg(id, text, ok) {
   el.innerHTML=`<div class="msg ${ok?'msg-success':'msg-error'}">${text}</div>`;
   setTimeout(()=>el.innerHTML='',4000);
 }
+</script>
+
+<script>
+  // Catch Supabase password recovery links and redirect to reset page
+  if (window.location.hash && window.location.hash.includes('type=recovery')) {
+    window.location.href = '/reset-password.html' + window.location.hash;
+  }
 </script>
 </body>
 </html>
