@@ -216,8 +216,8 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       <div id="spaces-msg"></div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Rent/Mo</th><th>Move In</th><th>Truck Plate</th><th>Email</th><th>Pmt Method</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody id="spaces-tbody"><tr><td colspan="10" class="empty-state">Loading...</td></tr></tbody>
+          <thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Phone</th><th>Rent/Mo</th><th>Move In</th><th>Truck Plate</th><th>Email</th><th>Pmt Method</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="spaces-tbody"><tr><td colspan="11" class="empty-state">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -294,6 +294,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       <div class="form-row"><label>Space Number *</label><input type="text" id="drv-space" placeholder="e.g. A-12"/></div>
       <div class="form-row"><label>Status</label><select id="drv-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="vacant">Vacant</option></select></div>
       <div class="form-row form-full"><label>Driver Full Name *</label><input type="text" id="drv-name" placeholder="Full name"/></div>
+      <div class="form-row form-full"><label>Company Name</label><input type="text" id="drv-company" placeholder="Company name (optional)"/></div>
       <div class="form-row"><label>Phone Number</label><input type="text" id="drv-phone" placeholder="(555) 555-5555"/></div>
       <div class="form-row"><label>Monthly Rent ($) *</label><input type="number" id="drv-rent" placeholder="450"/></div>
       <div class="form-row"><label>Move-In Date</label><input type="date" id="drv-movein"/></div>
@@ -439,10 +440,10 @@ function renderSpaces() {
   if (spaceFilter !== 'all') rows = rows.filter(d=>d.status===spaceFilter);
   if (q) rows = rows.filter(d=>d.name.toLowerCase().includes(q)||d.space_number.toLowerCase().includes(q));
   const tbody = document.getElementById('spaces-tbody');
-  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="10" class="empty-state">No drivers found.</td></tr>`; return; }
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="11" class="empty-state">No drivers found.</td></tr>`; return; }
   tbody.innerHTML = rows.map(d => {
     const bc = d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
-    return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.phone||'—'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td style="color:var(--muted)">${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td style="color:var(--muted)">${d.email||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
+    return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td style="color:var(--muted)">${d.company_name||'—'}</td><td>${d.phone||'—'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td style="color:var(--muted)">${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td style="color:var(--muted)">${d.email||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
   }).join('');
 }
 
@@ -450,7 +451,7 @@ function openDriverModal(clear=true) {
   if (clear) {
     document.getElementById('driver-modal-title').textContent = 'Add Driver';
     document.getElementById('edit-driver-id').value = '';
-    ['drv-space','drv-name','drv-phone','drv-rent','drv-movein','drv-moveout','drv-plate','drv-email'].forEach(id=>document.getElementById(id).value='');
+    ['drv-space','drv-name','drv-company','drv-phone','drv-rent','drv-movein','drv-moveout','drv-plate','drv-email'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('drv-status').value='active';
     document.getElementById('drv-payment').value='cash';
   }
@@ -464,6 +465,7 @@ async function editDriver(id) {
   document.getElementById('edit-driver-id').value=d.id;
   document.getElementById('drv-space').value=d.space_number;
   document.getElementById('drv-name').value=d.name;
+  document.getElementById('drv-company').value=d.company_name||'';
   document.getElementById('drv-phone').value=d.phone||'';
   document.getElementById('drv-rent').value=d.monthly_rent;
   document.getElementById('drv-movein').value=d.move_in_date||'';
@@ -480,6 +482,7 @@ async function saveDriver() {
   const payload = {
     space_number: document.getElementById('drv-space').value.trim(),
     name: document.getElementById('drv-name').value.trim(),
+    company_name: document.getElementById('drv-company').value.trim(),
     phone: document.getElementById('drv-phone').value.trim(),
     monthly_rent: parseFloat(document.getElementById('drv-rent').value)||0,
     move_in_date: document.getElementById('drv-movein').value||null,
@@ -678,10 +681,10 @@ async function loadReports() {
     </div>
     <div class="section-header"><div class="section-title">Space Tenant Directory</div></div>
     <div class="table-wrap">
-      <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Phone</th><th>Email</th><th>Monthly Rent</th><th>Move-In</th><th>Truck Plate</th><th>Pmt Method</th><th>Status</th></tr></thead>
+      <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Phone</th><th>Email</th><th>Monthly Rent</th><th>Move-In</th><th>Truck Plate</th><th>Pmt Method</th><th>Status</th></tr></thead>
       <tbody>${allDrivers.map(d=>{
         const bc=d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
-        return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.phone||'—'}</td><td>${d.email||'—'}</td><td>$${Number(d.monthly_rent).toFixed(2)}</td><td>${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td></tr>`;
+        return `<tr><td><strong>${d.space_number}</strong></td><td>${d.name}</td><td>${d.company_name||'—'}</td><td>${d.phone||'—'}</td><td>${d.email||'—'}</td><td>$${Number(d.monthly_rent).toFixed(2)}</td><td>${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'—'}</td><td>${d.truck_plate||'—'}</td><td style="text-transform:capitalize">${d.preferred_payment||'—'}</td><td><span class="badge ${bc}">${d.status}</span></td></tr>`;
       }).join('')}</tbody></table>
     </div>`;
 }
@@ -694,7 +697,6 @@ function showMsg(id, text, ok) {
 </script>
 
 <script>
-  // Catch Supabase password recovery links and redirect to reset page
   if (window.location.hash && window.location.hash.includes('type=recovery')) {
     window.location.href = '/reset-password.html' + window.location.hash;
   }
