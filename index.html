@@ -676,14 +676,14 @@ async function loadReports() {
         <div class="report-total"><span>YTD Total</span><span style="color:var(--green)">$${yearRev.toFixed(2)}</span></div>
       </div>
       <div class="report-card"><div class="report-card-title">Available Spaces by Size</div>
-        \${['small','large','xl'].map(size => {
+        ${['small','large','xl'].map(size => {
           const total = allDrivers.filter(d=>d.space_size===size).length;
           const available = allDrivers.filter(d=>d.space_size===size&&d.status==='vacant').length;
           if(total===0) return '';
-          return \`<div class="report-row"><span style="text-transform:capitalize">\${size}</span><strong>\${available} of \${total} available</strong></div>\`;
+          return `<div class="report-row"><span style="text-transform:capitalize">${size}</span><strong>${available} of ${total} available</strong></div>`;
         }).join('')}
-        \${allDrivers.filter(d=>!d.space_size||d.space_size==='').length > 0 ? \`<div class="report-row"><span style="color:var(--muted)">No size assigned</span><strong style="color:var(--muted)">\${allDrivers.filter(d=>!d.space_size||d.space_size==='').length} spaces</strong></div>\` : ''}
-        <div class="report-total"><span>Total Vacant</span><span style="color:#2563eb">\${allDrivers.filter(d=>d.status==='vacant').length} spaces</span></div>
+        ${allDrivers.filter(d=>!d.space_size||d.space_size==='').length > 0 ? `<div class="report-row"><span style="color:var(--muted)">No size assigned</span><strong style="color:var(--muted)">${allDrivers.filter(d=>!d.space_size||d.space_size==='').length} spaces</strong></div>` : ''}
+        <div class="report-total"><span>Total Vacant</span><span style="color:#2563eb">${allDrivers.filter(d=>d.status==='vacant').length} spaces</span></div>
       </div>
       <div class="report-card"><div class="report-card-title">Potential Revenue</div>
         <div class="report-row"><span>Active Spaces (occupied)</span><strong style="color:var(--green)">$${potentialActive.toFixed(2)}</strong></div>
