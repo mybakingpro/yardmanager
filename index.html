@@ -647,6 +647,13 @@ async function loadReports() {
   const vacant=allDrivers.filter(d=>d.status==='vacant').length;
   const occupancy=allDrivers.length?Math.round(active/allDrivers.length*100):0;
 
+  const potentialActive = allDrivers.filter(d=>d.status==='active').reduce((s,d)=>s+Number(d.monthly_rent||0),0);
+  const potentialVacant = allDrivers.filter(d=>d.status==='vacant').reduce((s,d)=>s+Number(d.monthly_rent||0),0);
+  const potentialTotal = potentialActive + potentialVacant;
+  const totalSpaces = allDrivers.filter(d=>d.status!=='inactive').length;
+  const occupancyRate = totalSpaces ? Math.round(active/totalSpaces*100) : 0;
+  const revenueEfficiency = potentialTotal > 0 ? Math.round((totalRev/potentialTotal)*100) : 0;
+
   document.getElementById('reports-content').innerHTML=`
     <div style="font-family:var(--font-head);font-size:26px;font-weight:800;letter-spacing:2px;margin-bottom:20px;text-transform:uppercase;border-bottom:3px solid var(--accent);padding-bottom:10px;">Report: ${monthName}</div>
     <div class="report-grid">
@@ -669,6 +676,13 @@ async function loadReports() {
         <div class="report-row"><span>Late Fees Collected</span><strong style="color:var(--accent2)">$${yearLF.toFixed(2)}</strong></div>
         <div class="report-row"><span>Total Payments Recorded</span><strong>${yList.filter(p=>p.status==='paid').length}</strong></div>
         <div class="report-total"><span>YTD Total</span><span style="color:var(--green)">$${yearRev.toFixed(2)}</span></div>
+      </div>
+      <div class="report-card"><div class="report-card-title">Potential Revenue</div>
+        <div class="report-row"><span>Active Spaces (occupied)</span><strong style="color:var(--green)">$\${potentialActive.toFixed(2)}</strong></div>
+        <div class="report-row"><span>Vacant Spaces (if filled)</span><strong style="color:#2563eb">$\${potentialVacant.toFixed(2)}</strong></div>
+        <div class="report-row"><span>Occupancy Rate</span><strong>\${occupancyRate}%</strong></div>
+        <div class="report-row"><span>Revenue Collected vs Potential</span><strong>\${revenueEfficiency}%</strong></div>
+        <div class="report-total"><span>Max Possible Revenue</span><span style="color:var(--accent)">$\${potentialTotal.toFixed(2)}</span></div>
       </div>
     </div>
     <div class="section-header"><div class="section-title">Payment Detail — ${monthName}</div></div>
@@ -718,22 +732,17 @@ function showMsg(id, text, ok) {
   </div>
 </div>
 <script>
-function openChangePwd() {
-  document.getElementById('new-pwd').value='';
-  document.getElementById('confirm-pwd').value='';
-  document.getElementById('changepwd-msg').innerHTML='';
-  document.getElementById('changepwd-modal').classList.add('open');
-}
-function closeChangePwd() { document.getElementById('changepwd-modal').classList.remove('open'); }
-async function doChangePassword() {
+function openChangePwd(){document.getElementById('new-pwd').value='';document.getElementById('confirm-pwd').value='';document.getElementById('changepwd-msg').innerHTML='';document.getElementById('changepwd-modal').classList.add('open');}
+function closeChangePwd(){document.getElementById('changepwd-modal').classList.remove('open');}
+async function doChangePassword(){
   const newPwd=document.getElementById('new-pwd').value;
   const confirmPwd=document.getElementById('confirm-pwd').value;
   const msgEl=document.getElementById('changepwd-msg');
-  if (!newPwd||newPwd.length<6){msgEl.innerHTML='<div class="msg msg-error">Password must be at least 6 characters.</div>';return;}
-  if (newPwd!==confirmPwd){msgEl.innerHTML='<div class="msg msg-error">Passwords do not match.</div>';return;}
+  if(!newPwd||newPwd.length<6){msgEl.innerHTML='<div class="msg msg-error">La contrasena debe tener al menos 6 caracteres.</div>';return;}
+  if(newPwd!==confirmPwd){msgEl.innerHTML='<div class="msg msg-error">Las contrasenas no coinciden.</div>';return;}
   const {error}=await _sb.auth.updateUser({password:newPwd});
-  if (error){msgEl.innerHTML='<div class="msg msg-error">Error: '+error.message+'</div>';return;}
-  msgEl.innerHTML='<div class="msg msg-success">Password updated successfully!</div>';
+  if(error){msgEl.innerHTML='<div class="msg msg-error">Error: '+error.message+'</div>';return;}
+  msgEl.innerHTML='<div class="msg msg-success">Contrasena actualizada!</div>';
   setTimeout(()=>closeChangePwd(),2000);
 }
 </script>
