@@ -172,7 +172,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
     </div>
     <div class="topbar-right">
       <span class="user-badge" id="user-label"></span>
-      <button class="btn-signout" onclick="doSignOut()">Sign Out</button>
+      <button class="btn-signout" onclick="openChangePwd()">Change Password</button><button class="btn-signout" onclick="doSignOut()">Sign Out</button>
     </div>
   </div>
 
@@ -700,6 +700,46 @@ function showMsg(id, text, ok) {
   if (window.location.hash && window.location.hash.includes('type=recovery')) {
     window.location.href = '/reset-password.html' + window.location.hash;
   }
+</script>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="changepwd-modal">
+  <div class="modal" style="width:400px">
+    <div class="modal-title">Change Password</div>
+    <div id="changepwd-msg"></div>
+    <div class="form-grid">
+      <div class="form-row form-full"><label>New Password</label><input type="password" id="new-pwd" placeholder="Enter new password"/></div>
+      <div class="form-row form-full"><label>Confirm Password</label><input type="password" id="confirm-pwd" placeholder="Confirm new password"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeChangePwd()">Cancel</button>
+      <button class="btn-save" onclick="doChangePassword()">Update Password</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+function openChangePwd() {
+  document.getElementById('new-pwd').value = '';
+  document.getElementById('confirm-pwd').value = '';
+  document.getElementById('changepwd-msg').innerHTML = '';
+  document.getElementById('changepwd-modal').classList.add('open');
+}
+function closeChangePwd() { document.getElementById('changepwd-modal').classList.remove('open'); }
+
+async function doChangePassword() {
+  const newPwd = document.getElementById('new-pwd').value;
+  const confirmPwd = document.getElementById('confirm-pwd').value;
+  const msgEl = document.getElementById('changepwd-msg');
+  if (!newPwd || newPwd.length < 6) { msgEl.innerHTML = '<div class="msg msg-error">Password must be at least 6 characters.</div>'; return; }
+  if (newPwd !== confirmPwd) { msgEl.innerHTML = '<div class="msg msg-error">Passwords do not match.</div>'; return; }
+  const { error } = await _sb.auth.updateUser({ password: newPwd });
+  if (error) { msgEl.innerHTML = '<div class="msg msg-error">Error: ' + error.message + '</div>'; return; }
+  msgEl.innerHTML = '<div class="msg msg-success">Password updated successfully!</div>';
+  setTimeout(() => closeChangePwd(), 2000);
+}
+
 </script>
 </body>
 </html>
