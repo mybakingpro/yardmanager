@@ -492,7 +492,8 @@ async function saveDriver() {
     status: document.getElementById('drv-status').value,
     preferred_payment: document.getElementById('drv-payment').value
   };
-  if (!payload.space_number||!payload.driver_name||!payload.monthly_rent) { alert('Space, name, and rent are required.'); return; }
+  if (!payload.space_number) { alert('Space number is required.'); return; }
+  if (payload.status !== 'vacant' && !payload.driver_name) { alert('Driver name is required for active/inactive spaces.'); return; }
   let error;
   if (id) ({ error } = await _sb.from('ym_drivers').update(payload).eq('id',id));
   else ({ error } = await _sb.from('ym_drivers').insert(payload));
@@ -702,7 +703,6 @@ function showMsg(id, text, ok) {
   }
 </script>
 
-<!-- CHANGE PASSWORD MODAL -->
 <div class="modal-overlay" id="changepwd-modal">
   <div class="modal" style="width:400px">
     <div class="modal-title">Change Password</div>
@@ -717,29 +717,25 @@ function showMsg(id, text, ok) {
     </div>
   </div>
 </div>
-
 <script>
-
 function openChangePwd() {
-  document.getElementById('new-pwd').value = '';
-  document.getElementById('confirm-pwd').value = '';
-  document.getElementById('changepwd-msg').innerHTML = '';
+  document.getElementById('new-pwd').value='';
+  document.getElementById('confirm-pwd').value='';
+  document.getElementById('changepwd-msg').innerHTML='';
   document.getElementById('changepwd-modal').classList.add('open');
 }
 function closeChangePwd() { document.getElementById('changepwd-modal').classList.remove('open'); }
-
 async function doChangePassword() {
-  const newPwd = document.getElementById('new-pwd').value;
-  const confirmPwd = document.getElementById('confirm-pwd').value;
-  const msgEl = document.getElementById('changepwd-msg');
-  if (!newPwd || newPwd.length < 6) { msgEl.innerHTML = '<div class="msg msg-error">Password must be at least 6 characters.</div>'; return; }
-  if (newPwd !== confirmPwd) { msgEl.innerHTML = '<div class="msg msg-error">Passwords do not match.</div>'; return; }
-  const { error } = await _sb.auth.updateUser({ password: newPwd });
-  if (error) { msgEl.innerHTML = '<div class="msg msg-error">Error: ' + error.message + '</div>'; return; }
-  msgEl.innerHTML = '<div class="msg msg-success">Password updated successfully!</div>';
-  setTimeout(() => closeChangePwd(), 2000);
+  const newPwd=document.getElementById('new-pwd').value;
+  const confirmPwd=document.getElementById('confirm-pwd').value;
+  const msgEl=document.getElementById('changepwd-msg');
+  if (!newPwd||newPwd.length<6){msgEl.innerHTML='<div class="msg msg-error">Password must be at least 6 characters.</div>';return;}
+  if (newPwd!==confirmPwd){msgEl.innerHTML='<div class="msg msg-error">Passwords do not match.</div>';return;}
+  const {error}=await _sb.auth.updateUser({password:newPwd});
+  if (error){msgEl.innerHTML='<div class="msg msg-error">Error: '+error.message+'</div>';return;}
+  msgEl.innerHTML='<div class="msg msg-success">Password updated successfully!</div>';
+  setTimeout(()=>closeChangePwd(),2000);
 }
-
 </script>
 </body>
 </html>
