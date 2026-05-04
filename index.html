@@ -678,11 +678,11 @@ async function loadReports() {
         <div class="report-total"><span>YTD Total</span><span style="color:var(--green)">$${yearRev.toFixed(2)}</span></div>
       </div>
       <div class="report-card"><div class="report-card-title">Potential Revenue</div>
-        <div class="report-row"><span>Active Spaces (occupied)</span><strong style="color:var(--green)">$\${potentialActive.toFixed(2)}</strong></div>
-        <div class="report-row"><span>Vacant Spaces (if filled)</span><strong style="color:#2563eb">$\${potentialVacant.toFixed(2)}</strong></div>
-        <div class="report-row"><span>Occupancy Rate</span><strong>\${occupancyRate}%</strong></div>
-        <div class="report-row"><span>Revenue Collected vs Potential</span><strong>\${revenueEfficiency}%</strong></div>
-        <div class="report-total"><span>Max Possible Revenue</span><span style="color:var(--accent)">$\${potentialTotal.toFixed(2)}</span></div>
+        <div class="report-row"><span>Active Spaces (occupied)</span><strong style="color:var(--green)">$${potentialActive.toFixed(2)}</strong></div>
+        <div class="report-row"><span>Vacant Spaces (if filled)</span><strong style="color:#2563eb">$${potentialVacant.toFixed(2)}</strong></div>
+        <div class="report-row"><span>Occupancy Rate</span><strong>${occupancyRate}%</strong></div>
+        <div class="report-row"><span>Revenue vs Potential</span><strong>${revenueEfficiency}%</strong></div>
+        <div class="report-total"><span>Max Possible Revenue</span><span style="color:var(--accent)">$${potentialTotal.toFixed(2)}</span></div>
       </div>
     </div>
     <div class="section-header"><div class="section-title">Payment Detail — ${monthName}</div></div>
@@ -738,11 +738,11 @@ async function doChangePassword(){
   const newPwd=document.getElementById('new-pwd').value;
   const confirmPwd=document.getElementById('confirm-pwd').value;
   const msgEl=document.getElementById('changepwd-msg');
-  if(!newPwd||newPwd.length<6){msgEl.innerHTML='<div class="msg msg-error">La contrasena debe tener al menos 6 caracteres.</div>';return;}
-  if(newPwd!==confirmPwd){msgEl.innerHTML='<div class="msg msg-error">Las contrasenas no coinciden.</div>';return;}
+  if(!newPwd||newPwd.length<6){msgEl.innerHTML='<div class="msg msg-error">Password must be at least 6 characters.</div>';return;}
+  if(newPwd!==confirmPwd){msgEl.innerHTML='<div class="msg msg-error">Passwords do not match.</div>';return;}
   const {error}=await _sb.auth.updateUser({password:newPwd});
   if(error){msgEl.innerHTML='<div class="msg msg-error">Error: '+error.message+'</div>';return;}
-  msgEl.innerHTML='<div class="msg msg-success">Contrasena actualizada!</div>';
+  msgEl.innerHTML='<div class="msg msg-success">Password updated successfully!</div>';
   setTimeout(()=>closeChangePwd(),2000);
 }
 </script>
