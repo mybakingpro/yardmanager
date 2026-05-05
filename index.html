@@ -544,7 +544,8 @@ function renderPayments() {
   tbody.innerHTML = rows.map(p => {
     const d=allDrivers.find(x=>x.id===p.driver_id), lf=Number(p.late_fee||0), bal=Number(p.balance_due||0);
     const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
-    const action=p.status!=='paid'?`<button class="btn-sm btn-pay" onclick="openPayModal('${p.id}')">Record</button>`:`<span style="color:var(--green);font-size:11px">&#10003;</span>`;
+    const editBtn=`<button class="btn-sm btn-edit" onclick="openEditPayModal('${p.id}')">Edit</button>`;
+    const action=p.status!=='paid'?`<button class="btn-sm btn-pay" onclick="openPayModal('${p.id}')">Record</button> ${editBtn}`:`<span style="color:var(--green);font-size:11px">&#10003;</span> ${editBtn}`;
     return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td style="color:var(--muted)">${d?d.company_name||'&#8212;':'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'&#8212;'}</td><td>${bal>0?'<span style="color:var(--accent2)">$'+bal.toFixed(2)+'</span>':'&#8212;'}</td><td>${badge}</td><td style="text-transform:capitalize;color:var(--muted)">${p.payment_method||'&#8212;'}</td><td style="color:var(--muted)">${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td><td>${action}</td></tr>`;
   }).join('');
 }
@@ -761,5 +762,46 @@ async function doChangePassword(){
   setTimeout(()=>closeChangePwd(),2000);
 }
 </script>
+
+<!-- EDIT PAYMENT MODAL -->
+<div class="modal-overlay" id="edit-pay-modal">
+  <div class="modal">
+    <div class="modal-title">Edit Payment Record</div>
+    <input type="hidden" id="edit-pay-modal-id"/>
+    <div class="form-grid">
+      <div class="form-row"><label>Rent Amount ($)</label><input type="number" id="edit-rent-amount" placeholder="0.00"/></div>
+      <div class="form-row"><label>Late Fee ($)</label><input type="number" id="edit-late-fee" placeholder="0.00"/></div>
+      <div class="form-row"><label>Balance Due ($)</label><input type="number" id="edit-balance-due" placeholder="0.00"/></div>
+      <div class="form-row"><label>Status</label><select id="edit-pay-status"><option value="unpaid">Unpaid</option><option value="late">Late</option><option value="partial">Partial</option><option value="paid">Paid</option></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditPayModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEditPayment()">Save Changes</button>
+    </div>
+  </div>
+</div>
+<script>
+function openEditPayModal(id) {
+  const p = allPayments.find(x=>x.id===id); if(!p) return;
+  document.getElementById('edit-pay-modal-id').value = id;
+  document.getElementById('edit-rent-amount').value = p.rent_amount||0;
+  document.getElementById('edit-late-fee').value = p.late_fee||0;
+  document.getElementById('edit-balance-due').value = p.balance_due||0;
+  document.getElementById('edit-pay-status').value = p.status||'unpaid';
+  document.getElementById('edit-pay-modal').classList.add('open');
+}
+function closeEditPayModal() { document.getElementById('edit-pay-modal').classList.remove('open'); }
+async function saveEditPayment() {
+  const id = document.getElementById('edit-pay-modal-id').value;
+  const rent = parseFloat(document.getElementById('edit-rent-amount').value)||0;
+  const late = parseFloat(document.getElementById('edit-late-fee').value)||0;
+  const bal = parseFloat(document.getElementById('edit-balance-due').value)||0;
+  const status = document.getElementById('edit-pay-status').value;
+  const { error } = await _sb.from('ym_payments').update({ rent_amount:rent, late_fee:late, balance_due:bal, status }).eq('id',id);
+  if (error) { showMsg('payments-msg','Error: '+error.message,false); return; }
+  closeEditPayModal(); showMsg('payments-msg','Payment record updated!',true); loadPaymentsTab();
+}
+</script>
+
 </body>
 </html>
