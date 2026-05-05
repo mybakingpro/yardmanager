@@ -407,7 +407,7 @@ async function loadDashboard() {
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('dash-month-label').textContent = months[now.getMonth()] + ' ' + now.getFullYear();
   // FIX 1: changed 'name' -> 'driver_name' in the select
-  const { data: payments } = await _sb.from('ym_payments').select('*, ym_drivers(space_number,driver_name,phone)').eq('month_year', monthYear);
+  const { data: payments } = await _sb.from('ym_payments').select('*').eq('month_year', monthYear);
   const pList = payments || [];
   document.getElementById('s-paid').textContent = pList.filter(p=>p.status==='paid').length;
   document.getElementById('s-unpaid').textContent = pList.filter(p=>p.status!=='paid').length;
@@ -421,7 +421,7 @@ async function loadDashboard() {
   const tbody = document.getElementById('dash-tbody');
   if (!unpaid.length) { tbody.innerHTML=`<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--green);font-weight:600">&#10003; All spaces paid this month!</td></tr>`; return; }
   tbody.innerHTML = unpaid.map(p => {
-    const d = p.ym_drivers;
+    const d = allDrivers.find(x=>x.id===p.driver_id);
     const lf = Number(p.late_fee||0);
     const badge = p.status==='late'?'<span class="badge badge-late">LATE</span>':'<span class="badge badge-unpaid">UNPAID</span>';
     return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td>${d?d.phone:'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'&#8212;'}</td><td>${badge}</td><td><button class="btn-sm btn-pay" onclick="openPayModal('${p.id}')">Record</button></td></tr>`;
@@ -529,8 +529,8 @@ function setPayFilter(f, btn) {
 
 async function loadPaymentsTab() {
   const month=document.getElementById('pay-month').value, year=document.getElementById('pay-year').value;
-  // FIX 2: changed 'name' -> 'driver_name' in the select
-  const { data } = await _sb.from('ym_payments').select('*, ym_drivers(space_number,driver_name,preferred_payment)').eq('month_year',`${year}-${month}`);
+  const { data, error } = await _sb.from('ym_payments').select('*').eq('month_year',`${year}-${month}`);
+  if (error) { showMsg('payments-msg','Load error: '+error.message,false); return; }
   allPayments = data||[]; renderPayments();
 }
 
@@ -540,7 +540,7 @@ function renderPayments() {
   const tbody = document.getElementById('pay-tbody');
   if (!rows.length) { tbody.innerHTML=`<tr><td colspan="9" class="empty-state">No records. Click "Generate Month" to create records.</td></tr>`; return; }
   tbody.innerHTML = rows.map(p => {
-    const d=p.ym_drivers, lf=Number(p.late_fee||0), bal=Number(p.balance_due||0);
+    const d=allDrivers.find(x=>x.id===p.driver_id), lf=Number(p.late_fee||0), bal=Number(p.balance_due||0);
     const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
     const action=p.status!=='paid'?`<button class="btn-sm btn-pay" onclick="openPayModal('${p.id}')">Record</button>`:`<span style="color:var(--green);font-size:11px">&#10003;</span>`;
     return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'&#8212;'}</td><td>${bal>0?'<span style="color:var(--accent2)">$'+bal.toFixed(2)+'</span>':'&#8212;'}</td><td>${badge}</td><td style="text-transform:capitalize;color:var(--muted)">${p.payment_method||'&#8212;'}</td><td style="color:var(--muted)">${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td><td>${action}</td></tr>`;
@@ -596,7 +596,7 @@ function setNoteFilter(f, btn) {
 
 async function loadNotes() {
   const driverId=document.getElementById('notes-driver-filter').value;
-  let q=_sb.from('ym_notes').select('*, ym_drivers(space_number,driver_name)').order('note_date',{ascending:false});
+  let q=_sb.from('ym_notes').select('*').order('note_date',{ascending:false});
   if (driverId) q=q.eq('driver_id',driverId);
   const { data } = await q; allNotes=data||[]; renderNotes();
 }
@@ -606,7 +606,7 @@ function renderNotes() {
   const container=document.getElementById('notes-list');
   if (!rows.length) { container.innerHTML=`<div class="empty-state">No notes found.</div>`; return; }
   container.innerHTML=rows.map(n => {
-    const d=n.ym_drivers, cls=n.category==='incident'||n.category==='warning'?n.category:n.category==='payment'?'payment':'';
+    const d=allDrivers.find(x=>x.id===n.driver_id), cls=n.category==='incident'||n.category==='warning'?n.category:n.category==='payment'?'payment':'';
     return `<div class="note-item ${cls}"><div class="note-meta"><strong>${d?d.space_number+' — '+d.driver_name:'Unknown'}</strong><span>&#183;</span><span style="text-transform:capitalize;color:var(--accent)">${n.category}</span><span>&#183;</span><span>${new Date(n.note_date+'T12:00:00').toLocaleDateString()}</span><button class="btn-sm btn-del" style="margin-left:auto" onclick="deleteNote('${n.id}')">Del</button></div><div class="note-text">${n.note}</div></div>`;
   }).join('');
 }
@@ -634,7 +634,7 @@ async function loadReports() {
   const month=document.getElementById('rep-month').value, year=document.getElementById('rep-year').value, monthYear=`${year}-${month}`;
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const monthName=months[parseInt(month)-1]+' '+year;
-  const { data: payments } = await _sb.from('ym_payments').select('*, ym_drivers(space_number,driver_name)').eq('month_year',monthYear);
+  const { data: payments } = await _sb.from('ym_payments').select('*').eq('month_year',monthYear);
   const { data: yearData } = await _sb.from('ym_payments').select('*').gte('month_year',`${year}-01`).lte('month_year',`${year}-12`);
   const pList=payments||[], yList=yearData||[];
   const paid=pList.filter(p=>p.status==='paid');
@@ -699,7 +699,7 @@ async function loadReports() {
     <div class="table-wrap" style="margin-bottom:24px">
       <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Rent</th><th>Late Fee</th><th>Total</th><th>Status</th><th>Method</th><th>Paid Date</th></tr></thead>
       <tbody>${pList.sort((a,b)=>(a.ym_drivers?.space_number||'').localeCompare(b.ym_drivers?.space_number||'')).map(p=>{
-        const d=p.ym_drivers,lf=Number(p.late_fee||0);
+        const d=allDrivers.find(x=>x.id===p.driver_id),lf=Number(p.late_fee||0);
         const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
         return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'$'+lf.toFixed(2):'&#8212;'}</td><td><strong>$${(Number(p.rent_amount)+lf).toFixed(2)}</strong></td><td>${badge}</td><td style="text-transform:capitalize">${p.payment_method||'&#8212;'}</td><td>${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td></tr>`;
       }).join('')}</tbody></table>
