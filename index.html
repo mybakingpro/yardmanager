@@ -242,8 +242,8 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       <div id="payments-msg"></div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Space</th><th>Driver</th><th>Rent</th><th>Late Fee</th><th>Balance Due</th><th>Status</th><th>Method</th><th>Paid Date</th><th>Actions</th></tr></thead>
-          <tbody id="pay-tbody"><tr><td colspan="9" class="empty-state">Select a month and click Load</td></tr></tbody>
+          <thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Rent</th><th>Late Fee</th><th>Balance Due</th><th>Status</th><th>Method</th><th>Paid Date</th><th>Actions</th></tr></thead>
+          <tbody id="pay-tbody"><tr><td colspan="10" class="empty-state">Select a month and click Load</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -540,12 +540,12 @@ function renderPayments() {
   let rows = payFilter==='all' ? allPayments : allPayments.filter(p=>p.status===payFilter);
   rows.sort((a,b)=>(a.ym_drivers?.space_number||'').localeCompare(b.ym_drivers?.space_number||''));
   const tbody = document.getElementById('pay-tbody');
-  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="9" class="empty-state">No records. Click "Generate Month" to create records.</td></tr>`; return; }
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="10" class="empty-state">No records. Click "Generate Month" to create records.</td></tr>`; return; }
   tbody.innerHTML = rows.map(p => {
     const d=allDrivers.find(x=>x.id===p.driver_id), lf=Number(p.late_fee||0), bal=Number(p.balance_due||0);
     const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
     const action=p.status!=='paid'?`<button class="btn-sm btn-pay" onclick="openPayModal('${p.id}')">Record</button>`:`<span style="color:var(--green);font-size:11px">&#10003;</span>`;
-    return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'&#8212;'}</td><td>${bal>0?'<span style="color:var(--accent2)">$'+bal.toFixed(2)+'</span>':'&#8212;'}</td><td>${badge}</td><td style="text-transform:capitalize;color:var(--muted)">${p.payment_method||'&#8212;'}</td><td style="color:var(--muted)">${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td><td>${action}</td></tr>`;
+    return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td style="color:var(--muted)">${d?d.company_name||'&#8212;':'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'&#8212;'}</td><td>${bal>0?'<span style="color:var(--accent2)">$'+bal.toFixed(2)+'</span>':'&#8212;'}</td><td>${badge}</td><td style="text-transform:capitalize;color:var(--muted)">${p.payment_method||'&#8212;'}</td><td style="color:var(--muted)">${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td><td>${action}</td></tr>`;
   }).join('');
 }
 
@@ -706,7 +706,7 @@ async function loadReports() {
       <tbody>${pList.sort((a,b)=>(a.ym_drivers?.space_number||'').localeCompare(b.ym_drivers?.space_number||'')).map(p=>{
         const d=allDrivers.find(x=>x.id===p.driver_id),lf=Number(p.late_fee||0);
         const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
-        return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'$'+lf.toFixed(2):'&#8212;'}</td><td><strong>$${(Number(p.rent_amount)+lf).toFixed(2)}</strong></td><td>${badge}</td><td style="text-transform:capitalize">${p.payment_method||'&#8212;'}</td><td>${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td></tr>`;
+        return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td style="color:var(--muted)">${d?d.company_name||'&#8212;':'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'$'+lf.toFixed(2):'&#8212;'}</td><td><strong>$${(Number(p.rent_amount)+lf).toFixed(2)}</strong></td><td>${badge}</td><td style="text-transform:capitalize">${p.payment_method||'&#8212;'}</td><td>${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td></tr>`;
       }).join('')}</tbody></table>
     </div>
     <div class="section-header"><div class="section-title">Space Tenant Directory</div></div>
