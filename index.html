@@ -729,73 +729,88 @@ async function loadReports() {
   const active=allDrivers.filter(d=>d.status==='active').length;
   const vacant=allDrivers.filter(d=>d.status==='vacant').length;
   const occupancy=allDrivers.length?Math.round(active/allDrivers.length*100):0;
+  const potentialActive=allDrivers.filter(d=>d.status==='active').reduce((s,d)=>s+Number(d.monthly_rent||0),0);
+  const potentialVacant=allDrivers.filter(d=>d.status==='vacant').reduce((s,d)=>s+Number(d.monthly_rent||0),0);
+  const potentialTotal=potentialActive+potentialVacant;
+  const totalSpaces=allDrivers.filter(d=>d.status!=='inactive').length;
+  const occupancyRate=totalSpaces?Math.round(active/totalSpaces*100):0;
+  const revenueEfficiency=potentialTotal>0?Math.round((totalRev/potentialTotal)*100):0;
 
-  const potentialActive = allDrivers.filter(d=>d.status==='active').reduce((s,d)=>s+Number(d.monthly_rent||0),0);
-  const potentialVacant = allDrivers.filter(d=>d.status==='vacant').reduce((s,d)=>s+Number(d.monthly_rent||0),0);
-  const potentialTotal = potentialActive + potentialVacant;
-  const totalSpaces = allDrivers.filter(d=>d.status!=='inactive').length;
-  const occupancyRate = totalSpaces ? Math.round(active/totalSpaces*100) : 0;
-  const revenueEfficiency = potentialTotal > 0 ? Math.round((totalRev/potentialTotal)*100) : 0;
+  const showRevenue=document.getElementById('rep-monthly-revenue').checked;
+  const showOccupancy=document.getElementById('rep-occupancy').checked;
+  const showYTD=document.getElementById('rep-ytd').checked;
+  const showPotential=document.getElementById('rep-potential').checked;
+  const showPayDetail=document.getElementById('rep-payment-detail').checked;
+  const showTenantDir=document.getElementById('rep-tenant-dir').checked;
+  const showSpaceSize=document.getElementById('rep-space-size').checked;
 
-  document.getElementById('reports-content').innerHTML=`
-    <div style="font-family:var(--font-head);font-size:26px;font-weight:800;letter-spacing:2px;margin-bottom:20px;text-transform:uppercase;border-bottom:3px solid var(--accent);padding-bottom:10px;">Report: ${monthName}</div>
-    <div class="report-grid">
-      <div class="report-card"><div class="report-card-title">Monthly Revenue</div>
-        <div class="report-row"><span>Rent Collected</span><strong>$${(totalRev-totalLF).toFixed(2)}</strong></div>
-        <div class="report-row"><span>Late Fees Collected</span><strong style="color:var(--accent2)">$${totalLF.toFixed(2)}</strong></div>
-        <div class="report-row"><span>Outstanding Balance</span><strong style="color:var(--accent2)">$${outstanding.toFixed(2)}</strong></div>
-        <div class="report-row"><span>Paid Spaces</span><strong>${paid.length} of ${pList.length}</strong></div>
-        <div class="report-total"><span>Total Collected</span><span style="color:var(--green)">$${totalRev.toFixed(2)}</span></div>
-      </div>
-      ` : ''} ${showOccupancy ? `<div class="report-card"><div class="report-card-title">Occupancy &#8212; ${monthName}</div>
-        <div class="report-row"><span>Active Spaces</span><strong style="color:var(--green)">${active}</strong></div>
-        <div class="report-row"><span>Vacant Spaces</span><strong style="color:#2563eb">${vacant}</strong></div>
-        <div class="report-row"><span>Inactive</span><strong style="color:var(--muted)">${allDrivers.filter(d=>d.status==='inactive').length}</strong></div>
-        <div class="report-row"><span>Total Spaces</span><strong>${allDrivers.length}</strong></div>
-        <div class="report-total"><span>Occupancy Rate</span><span style="color:var(--green)">${occupancy}%</span></div>
-      </div>
-      ` : ''} ${showYTD ? `<div class="report-card"><div class="report-card-title">Year-to-Date ${year}</div>
-        <div class="report-row"><span>Total Revenue</span><strong>$${yearRev.toFixed(2)}</strong></div>
-        <div class="report-row"><span>Late Fees Collected</span><strong style="color:var(--accent2)">$${yearLF.toFixed(2)}</strong></div>
-        <div class="report-row"><span>Total Payments Recorded</span><strong>${yList.filter(p=>p.status==='paid').length}</strong></div>
-        <div class="report-total"><span>YTD Total</span><span style="color:var(--green)">$${yearRev.toFixed(2)}</span></div>
-      </div>
-      ` : ''} ${showSpaceSize ? `<div class="report-card"><div class="report-card-title">Available Spaces by Size</div>
-        ${['small','large','xl'].map(size => {
-          const total = allDrivers.filter(d=>d.space_size===size).length;
-          const available = allDrivers.filter(d=>d.space_size===size&&d.status==='vacant').length;
-          if(total===0) return '';
-          return `<div class="report-row"><span style="text-transform:capitalize">${size}</span><strong>${available} of ${total} available</strong></div>`;
-        }).join('')}
-        ${allDrivers.filter(d=>!d.space_size||d.space_size==='').length > 0 ? `<div class="report-row"><span style="color:var(--muted)">No size assigned</span><strong style="color:var(--muted)">${allDrivers.filter(d=>!d.space_size||d.space_size==='').length} spaces</strong></div>` : ''}
-        <div class="report-total"><span>Total Vacant</span><span style="color:#2563eb">${allDrivers.filter(d=>d.status==='vacant').length} spaces</span></div>
-      </div>
-      ` : ''} ${showPotential ? `<div class="report-card"><div class="report-card-title">Potential Revenue</div>
-        <div class="report-row"><span>Active Spaces (occupied)</span><strong style="color:var(--green)">$${potentialActive.toFixed(2)}</strong></div>
-        <div class="report-row"><span>Vacant Spaces (if filled)</span><strong style="color:#2563eb">$${potentialVacant.toFixed(2)}</strong></div>
-        <div class="report-row"><span>Occupancy Rate</span><strong>${occupancyRate}%</strong></div>
-        <div class="report-row"><span>Revenue vs Potential</span><strong>${revenueEfficiency}%</strong></div>
-        <div class="report-total"><span>Max Possible Revenue</span><span style="color:var(--accent)">$${potentialTotal.toFixed(2)}</span></div>
-      </div>` : ''}
-    </div>
-    ${showPayDetail ? `<div class="section-header"><div class="section-title">Payment Detail &#8212; ${monthName}</div></div>
-    <div class="table-wrap" style="margin-bottom:24px">
-      <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Rent</th><th>Late Fee</th><th>Total</th><th>Status</th><th>Method</th><th>Paid Date</th></tr></thead>
-      <tbody>${pList.sort((a,b)=>(a.ym_drivers?.space_number||'').localeCompare(b.ym_drivers?.space_number||'')).map(p=>{
-        const d=allDrivers.find(x=>x.id===p.driver_id),lf=Number(p.late_fee||0);
-        const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
-        return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td style="color:var(--muted)">${d?d.company_name||'&#8212;':'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'$'+lf.toFixed(2):'&#8212;'}</td><td><strong>$${(Number(p.rent_amount)+lf).toFixed(2)}</strong></td><td>${badge}</td><td style="text-transform:capitalize">${p.payment_method||'&#8212;'}</td><td>${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td></tr>`;
-      }).join('')}</tbody></table>
-    </div>` : ''}
-    ${showTenantDir ? `<div class="section-header"><div class="section-title">Space Tenant Directory</div></div>
-    <div class="table-wrap">
-      <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Phone</th><th>Email</th><th>Monthly Rent</th><th>Move-In</th><th>Truck Plate</th><th>Pmt Method</th><th>Status</th></tr></thead>
-      <tbody>${allDrivers.map(d=>{
-        const bc=d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
-        return `<tr><td><strong>${d.space_number}</strong></td><td>${d.driver_name}</td><td>${d.company_name||'&#8212;'}</td><td>${d.phone||'&#8212;'}</td><td>${d.email||'&#8212;'}</td><td>$${Number(d.monthly_rent).toFixed(2)}</td><td>${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td><td>${d.truck_plate||'&#8212;'}</td><td style="text-transform:capitalize">${d.preferred_payment||'&#8212;'}</td><td><span class="badge ${bc}">${d.status}</span></td></tr>`;
-      }).join('')}</tbody></table>
-    </div>` : ''}
-  `;
+  let html2 = '<div style="font-family:var(--font-head);font-size:26px;font-weight:800;letter-spacing:2px;margin-bottom:20px;text-transform:uppercase;border-bottom:3px solid var(--accent);padding-bottom:10px;">Report: '+monthName+'</div>';
+  html2 += '<div class="report-grid">';
+
+  if (showRevenue) html2 += '<div class="report-card"><div class="report-card-title">Monthly Revenue</div>'
+    +'<div class="report-row"><span>Rent Collected</span><strong>$'+(totalRev-totalLF).toFixed(2)+'</strong></div>'
+    +'<div class="report-row"><span>Late Fees Collected</span><strong style="color:var(--accent2)">$'+totalLF.toFixed(2)+'</strong></div>'
+    +'<div class="report-row"><span>Outstanding Balance</span><strong style="color:var(--accent2)">$'+outstanding.toFixed(2)+'</strong></div>'
+    +'<div class="report-row"><span>Paid Spaces</span><strong>'+paid.length+' of '+pList.length+'</strong></div>'
+    +'<div class="report-total"><span>Total Collected</span><span style="color:var(--green)">$'+totalRev.toFixed(2)+'</span></div></div>';
+
+  if (showOccupancy) html2 += '<div class="report-card"><div class="report-card-title">Occupancy &mdash; '+monthName+'</div>'
+    +'<div class="report-row"><span>Active Spaces</span><strong style="color:var(--green)">'+active+'</strong></div>'
+    +'<div class="report-row"><span>Vacant Spaces</span><strong style="color:#2563eb">'+vacant+'</strong></div>'
+    +'<div class="report-row"><span>Inactive</span><strong style="color:var(--muted)">'+allDrivers.filter(d=>d.status==='inactive').length+'</strong></div>'
+    +'<div class="report-row"><span>Total Spaces</span><strong>'+allDrivers.length+'</strong></div>'
+    +'<div class="report-total"><span>Occupancy Rate</span><span style="color:var(--green)">'+occupancy+'%</span></div></div>';
+
+  if (showYTD) html2 += '<div class="report-card"><div class="report-card-title">Year-to-Date '+year+'</div>'
+    +'<div class="report-row"><span>Total Revenue</span><strong>$'+yearRev.toFixed(2)+'</strong></div>'
+    +'<div class="report-row"><span>Late Fees Collected</span><strong style="color:var(--accent2)">$'+yearLF.toFixed(2)+'</strong></div>'
+    +'<div class="report-row"><span>Total Payments Recorded</span><strong>'+yList.filter(p=>p.status==='paid').length+'</strong></div>'
+    +'<div class="report-total"><span>YTD Total</span><span style="color:var(--green)">$'+yearRev.toFixed(2)+'</span></div></div>';
+
+  if (showSpaceSize) {
+    let sizeHtml='<div class="report-card"><div class="report-card-title">Available Spaces by Size</div>';
+    ['small','large','xl'].forEach(size=>{
+      const total=allDrivers.filter(d=>d.space_size===size).length;
+      const available=allDrivers.filter(d=>d.space_size===size&&d.status==='vacant').length;
+      if(total>0) sizeHtml+='<div class="report-row"><span style="text-transform:capitalize">'+size+'</span><strong>'+available+' of '+total+' available</strong></div>';
+    });
+    const noSize=allDrivers.filter(d=>!d.space_size||d.space_size==='').length;
+    if(noSize>0) sizeHtml+='<div class="report-row"><span style="color:var(--muted)">No size assigned</span><strong style="color:var(--muted)">'+noSize+' spaces</strong></div>';
+    sizeHtml+='<div class="report-total"><span>Total Vacant</span><span style="color:#2563eb">'+allDrivers.filter(d=>d.status==='vacant').length+' spaces</span></div></div>';
+    html2+=sizeHtml;
+  }
+
+  if (showPotential) html2 += '<div class="report-card"><div class="report-card-title">Potential Revenue</div>'
+    +'<div class="report-row"><span>Active Spaces (occupied)</span><strong style="color:var(--green)">$'+potentialActive.toFixed(2)+'</strong></div>'
+    +'<div class="report-row"><span>Vacant Spaces (if filled)</span><strong style="color:#2563eb">$'+potentialVacant.toFixed(2)+'</strong></div>'
+    +'<div class="report-row"><span>Occupancy Rate</span><strong>'+occupancyRate+'%</strong></div>'
+    +'<div class="report-row"><span>Revenue vs Potential</span><strong>'+revenueEfficiency+'%</strong></div>'
+    +'<div class="report-total"><span>Max Possible Revenue</span><span style="color:var(--accent)">$'+potentialTotal.toFixed(2)+'</span></div></div>';
+
+  html2 += '</div>';
+
+  if (showPayDetail) {
+    html2 += '<div class="section-header"><div class="section-title">Payment Detail &mdash; '+monthName+'</div></div>';
+    html2 += '<div class="table-wrap" style="margin-bottom:24px"><table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Rent</th><th>Late Fee</th><th>Total</th><th>Status</th><th>Method</th><th>Paid Date</th></tr></thead><tbody>';
+    pList.sort((a,b)=>(allDrivers.find(x=>x.id===a.driver_id)?.space_number||'').localeCompare(allDrivers.find(x=>x.id===b.driver_id)?.space_number||'')).forEach(p=>{
+      const d=allDrivers.find(x=>x.id===p.driver_id), lf=Number(p.late_fee||0);
+      const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
+      html2+='<tr><td><strong>'+(d?d.space_number:'&mdash;')+'</strong></td><td>'+(d?d.driver_name:'&mdash;')+'</td><td>$'+Number(p.rent_amount).toFixed(2)+'</td><td>'+(lf>0?'$'+lf.toFixed(2):'&mdash;')+'</td><td><strong>$'+(Number(p.rent_amount)+lf).toFixed(2)+'</strong></td><td>'+badge+'</td><td style="text-transform:capitalize">'+(p.payment_method||'&mdash;')+'</td><td>'+(p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&mdash;')+'</td></tr>';
+    });
+    html2+='</tbody></table></div>';
+  }
+
+  if (showTenantDir) {
+    html2+='<div class="section-header"><div class="section-title">Space Tenant Directory</div></div>';
+    html2+='<div class="table-wrap"><table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Phone</th><th>Email</th><th>Monthly Rent</th><th>Truck Plate</th><th>Pmt Method</th><th>Status</th></tr></thead><tbody>';
+    allDrivers.forEach(d=>{
+      const bc=d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
+      html2+='<tr><td><strong>'+d.space_number+'</strong></td><td>'+d.driver_name+'</td><td>'+(d.company_name||'&mdash;')+'</td><td>'+(d.phone||'&mdash;')+'</td><td>'+(d.email||'&mdash;')+'</td><td>$'+Number(d.monthly_rent).toFixed(2)+'</td><td>'+(d.truck_plate||'&mdash;')+'</td><td style="text-transform:capitalize">'+(d.preferred_payment||'&mdash;')+'</td><td><span class="badge '+bc+'">'+d.status+'</span></td></tr>';
+    });
+    html2+='</tbody></table></div>';
+  }
+
+  document.getElementById('reports-content').innerHTML = html2;
 }
 
 function showMsg(id, text, ok) {
