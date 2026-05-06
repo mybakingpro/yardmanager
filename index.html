@@ -290,6 +290,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-potential"/> Potential Revenue</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-payment-detail" checked/> Payment Detail</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-tenant-dir"/> Tenant Directory</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-late-unpaid" checked/> Late &amp; Unpaid</label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-space-size"/> Spaces by Size</label>
         </div>
       </div>
@@ -798,6 +799,25 @@ async function loadReports() {
       html2+='<tr><td><strong>'+d.space_number+'</strong></td><td>'+d.driver_name+'</td><td>'+(d.company_name||'&mdash;')+'</td><td>'+(d.phone||'&mdash;')+'</td><td>'+(d.email||'&mdash;')+'</td><td>$'+Number(d.monthly_rent).toFixed(2)+'</td><td>'+(d.truck_plate||'&mdash;')+'</td><td style="text-transform:capitalize">'+(d.preferred_payment||'&mdash;')+'</td><td><span class="badge '+bc+'">'+d.status+'</span></td></tr>';
     });
     html2+='</tbody></table></div>';
+  }
+
+  const showLateUnpaid = document.getElementById('rep-late-unpaid').checked;
+  if (showLateUnpaid) {
+    const lateUnpaid = pList.filter(p=>p.status==='late'||p.status==='unpaid'||p.status==='partial');
+    html2 += '<div class="section-header"><div class="section-title" style="color:var(--accent2)">&#9888; Late &amp; Unpaid</div></div>';
+    if (!lateUnpaid.length) {
+      html2 += '<div style="padding:20px;text-align:center;color:var(--green);font-weight:600;">&#10003; All spaces paid for '+monthName+'!</div>';
+    } else {
+      html2 += '<div class="table-wrap" style="margin-bottom:24px"><table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Phone</th><th>Rent</th><th>Late Fee</th><th>Balance Due</th><th>Status</th><th>Method</th></tr></thead><tbody>';
+      lateUnpaid.sort((a,b)=>(allDrivers.find(x=>x.id===a.driver_id)?.space_number||'').localeCompare(allDrivers.find(x=>x.id===b.driver_id)?.space_number||'')).forEach(p=>{
+        const d=allDrivers.find(x=>x.id===p.driver_id), lf=Number(p.late_fee||0), bal=Number(p.balance_due||0);
+        const badge=p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
+        html2+='<tr><td><strong>'+(d?d.space_number:'&mdash;')+'</strong></td><td>'+(d?d.driver_name:'&mdash;')+'</td><td style="color:var(--muted)">'+(d?d.company_name||'&mdash;':'&mdash;')+'</td><td>'+(d?d.phone||'&mdash;':'&mdash;')+'</td><td>$'+Number(p.rent_amount).toFixed(2)+'</td><td>'+(lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'&mdash;')+'</td><td><strong style="color:var(--accent2)">$'+bal.toFixed(2)+'</strong></td><td>'+badge+'</td><td style="text-transform:capitalize">'+(p.payment_method||'&mdash;')+'</td></tr>';
+      });
+      html2 += '</tbody></table></div>';
+      const totalOwed = lateUnpaid.reduce((s,p)=>s+Number(p.balance_due||0),0);
+      html2 += '<div style="text-align:right;font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent2);margin-bottom:24px;">Total Outstanding: $'+totalOwed.toFixed(2)+'</div>';
+    }
   }
 
   document.getElementById('reports-content').innerHTML = html2;
