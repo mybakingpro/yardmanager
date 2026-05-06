@@ -559,17 +559,6 @@ async function loadPaymentsTab() {
   const month=document.getElementById('pay-month').value, year=document.getElementById('pay-year').value;
   const { data, error } = await _sb.from('ym_payments').select('*').eq('month_year',`${year}-${month}`);
   if (error) { showMsg('payments-msg','Load error: '+error.message,false); return; }
-  const now = new Date();
-  const isCurrentMonth = now.getFullYear()===parseInt(year) && (now.getMonth()+1)===parseInt(month);
-  const pastDue = isCurrentMonth && now.getDate() > 5;
-  if (pastDue) {
-    for (const p of (data||[])) {
-      if (p.status !== 'paid' && Number(p.late_fee||0) === 0) {
-        await _sb.from('ym_payments').update({ late_fee:35, balance_due:Number(p.rent_amount)+35, status:'late' }).eq('id',p.id);
-        p.late_fee = 35; p.balance_due = Number(p.rent_amount)+35; p.status = 'late';
-      }
-    }
-  }
   allPayments = data||[]; renderPayments();
 }
 
@@ -597,7 +586,8 @@ async function generateMonthlyPayments() {
   for (const d of active) {
     const { data: ex } = await _sb.from('ym_payments').select('id').eq('driver_id',d.id).eq('month_year',monthYear);
     if (!ex||!ex.length) {
-      const { error: insErr } = await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, rent_amount:d.monthly_rent, late_fee:0, status:'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent });
+      const isLate = isCurrent && day > 5;
+      const { error: insErr } = await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, rent_amount:d.monthly_rent, late_fee:isLate?35:0, status:isLate?'late':'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent+(isLate?35:0) });
       if (insErr) { console.error('INSERT ERROR for '+d.driver_name+':', insErr); insertErrors.push(d.driver_name+': '+insErr.message); }
     }
   }
