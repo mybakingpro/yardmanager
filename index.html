@@ -170,6 +170,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       <button class="nav-tab" onclick="showTab('payments',this)">Payments</button>
       <button class="nav-tab" onclick="showTab('notes',this)">Notes</button>
       <button class="nav-tab" onclick="showTab('reports',this)">Reports</button>
+      <button class="nav-tab" onclick="showTab('account',this)">Accounts</button>
     </div>
     <div class="topbar-right">
       <span class="user-badge" id="user-label"></span>
@@ -280,7 +281,30 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
           <button class="btn-print" onclick="window.print()">&#128424; Print</button>
         </div>
       </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px 20px;margin-bottom:20px;">
+        <div style="font-family:var(--font-head);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;color:var(--muted)">Include in Report:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-monthly-revenue" checked/> Monthly Revenue</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-occupancy" checked/> Occupancy</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-ytd"/> Year-to-Date</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-potential"/> Potential Revenue</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-payment-detail" checked/> Payment Detail</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-tenant-dir"/> Tenant Directory</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="rep-space-size"/> Spaces by Size</label>
+        </div>
+      </div>
       <div id="reports-content"><div class="empty-state">Select a month and click Run Report.</div></div>
+    </div>
+
+    <!-- DRIVER ACCOUNT -->
+    <div class="tab-panel" id="tab-account">
+      <div class="section-header">
+        <div class="section-title">Driver Account</div>
+        <select class="ctrl-select" id="account-driver-select" onchange="loadDriverAccount()">
+          <option value="">Select a driver...</option>
+        </select>
+      </div>
+      <div id="account-content"><div class="empty-state">Select a driver to view their account.</div></div>
     </div>
 
   </div>
@@ -385,6 +409,7 @@ function showTab(tab, btn) {
   btn.classList.add('active');
   if (tab === 'spaces') renderSpaces();
   if (tab === 'notes') loadNotes();
+  if (tab === 'account') { populateDriverSelects(); }
 }
 
 async function loadAllDrivers() {
@@ -394,6 +419,8 @@ async function loadAllDrivers() {
 }
 
 function populateDriverSelects() {
+  const accSel = document.getElementById('account-driver-select');
+  if (accSel) accSel.innerHTML = '<option value="">Select a driver...</option>' + allDrivers.map(d=>`<option value="${d.id}">${d.space_number} — ${d.driver_name}</option>`).join('');
   ['notes-driver-filter','note-driver'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
@@ -531,9 +558,18 @@ function setPayFilter(f, btn) {
 async function loadPaymentsTab() {
   const month=document.getElementById('pay-month').value, year=document.getElementById('pay-year').value;
   const { data, error } = await _sb.from('ym_payments').select('*').eq('month_year',`${year}-${month}`);
-  console.log('PAY LOAD:', { year, month, data, error });
   if (error) { showMsg('payments-msg','Load error: '+error.message,false); return; }
-  showMsg('payments-msg', `Debug: found ${(data||[]).length} records for ${year}-${month}`, true);
+  const now = new Date();
+  const isCurrentMonth = now.getFullYear()===parseInt(year) && (now.getMonth()+1)===parseInt(month);
+  const pastDue = isCurrentMonth && now.getDate() > 5;
+  if (pastDue) {
+    for (const p of (data||[])) {
+      if (p.status !== 'paid' && Number(p.late_fee||0) === 0) {
+        await _sb.from('ym_payments').update({ late_fee:35, balance_due:Number(p.rent_amount)+35, status:'late' }).eq('id',p.id);
+        p.late_fee = 35; p.balance_due = Number(p.rent_amount)+35; p.status = 'late';
+      }
+    }
+  }
   allPayments = data||[]; renderPayments();
 }
 
@@ -561,8 +597,7 @@ async function generateMonthlyPayments() {
   for (const d of active) {
     const { data: ex } = await _sb.from('ym_payments').select('id').eq('driver_id',d.id).eq('month_year',monthYear);
     if (!ex||!ex.length) {
-      const isLate=isCurrent&&day>5;
-      const { error: insErr } = await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, rent_amount:d.monthly_rent, late_fee:isLate?35:0, status:isLate?'late':'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent+(isLate?35:0) });
+      const { error: insErr } = await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, rent_amount:d.monthly_rent, late_fee:0, status:'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent });
       if (insErr) { console.error('INSERT ERROR for '+d.driver_name+':', insErr); insertErrors.push(d.driver_name+': '+insErr.message); }
     }
   }
@@ -637,6 +672,47 @@ async function saveNote() {
 
 async function deleteNote(id) { if(!confirm('Delete this note?')) return; await _sb.from('ym_notes').delete().eq('id',id); loadNotes(); }
 
+async function loadDriverAccount() {
+  const driverId = document.getElementById('account-driver-select').value;
+  if (!driverId) return;
+  const driver = allDrivers.find(d=>d.id===driverId);
+  if (!driver) return;
+  const { data: payments } = await _sb.from('ym_payments').select('*').eq('driver_id', driverId).order('month_year', {ascending:false});
+  const pList = payments||[];
+  const totalOwed = pList.reduce((s,p)=>s+Number(p.rent_amount||0)+Number(p.late_fee||0),0);
+  const totalPaid = pList.reduce((s,p)=>s+Number(p.amount_paid||0),0);
+  const totalOutstanding = pList.filter(p=>p.status!=='paid').reduce((s,p)=>s+Number(p.balance_due||0),0);
+  const bc = driver.status==='active'?'badge-active':driver.status==='vacant'?'badge-vacant':'badge-inactive';
+  document.getElementById('account-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;">
+      <div class="stat-card green"><div class="stat-label">Total Paid</div><div class="stat-value">$${totalPaid.toFixed(2)}</div></div>
+      <div class="stat-card red"><div class="stat-label">Outstanding</div><div class="stat-value">$${totalOutstanding.toFixed(2)}</div></div>
+      <div class="stat-card blue"><div class="stat-label">Months on Record</div><div class="stat-value">${pList.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Monthly Rent</div><div class="stat-value">$${Number(driver.monthly_rent).toFixed(2)}</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px 20px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+        <div><span style="color:var(--muted)">Space:</span> <strong>${driver.space_number}</strong></div>
+        <div><span style="color:var(--muted)">Status:</span> <span class="badge ${bc}">${driver.status}</span></div>
+        <div><span style="color:var(--muted)">Company:</span> ${driver.company_name||'—'}</div>
+        <div><span style="color:var(--muted)">Phone:</span> ${driver.phone||'—'}</div>
+        <div><span style="color:var(--muted)">Email:</span> ${driver.email||'—'}</div>
+        <div><span style="color:var(--muted)">Payment Method:</span> ${driver.preferred_payment||'—'}</div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-bottom:12px;">Payment History</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Month</th><th>Rent</th><th>Late Fee</th><th>Total</th><th>Paid</th><th>Balance Due</th><th>Status</th><th>Method</th><th>Paid Date</th></tr></thead>
+        <tbody>${pList.length ? pList.map(p=>{
+          const lf=Number(p.late_fee||0), total=Number(p.rent_amount)+lf, paid=Number(p.amount_paid||0), bal=Number(p.balance_due||0);
+          const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
+          return `<tr><td><strong>${p.month_year}</strong></td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'—'}</td><td><strong>$${total.toFixed(2)}</strong></td><td style="color:var(--green)">${paid>0?'$'+paid.toFixed(2):'—'}</td><td>${bal>0?'<span style="color:var(--accent2)">$'+bal.toFixed(2)+'</span>':'—'}</td><td>${badge}</td><td style="text-transform:capitalize">${p.payment_method||'—'}</td><td>${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'—'}</td></tr>`;
+        }).join('') : '<tr><td colspan="9" class="empty-state">No payment records found.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
 async function loadReports() {
   const month=document.getElementById('rep-month').value, year=document.getElementById('rep-year').value, monthYear=`${year}-${month}`;
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -671,20 +747,20 @@ async function loadReports() {
         <div class="report-row"><span>Paid Spaces</span><strong>${paid.length} of ${pList.length}</strong></div>
         <div class="report-total"><span>Total Collected</span><span style="color:var(--green)">$${totalRev.toFixed(2)}</span></div>
       </div>
-      <div class="report-card"><div class="report-card-title">Occupancy &#8212; ${monthName}</div>
+      ` : ''} ${showOccupancy ? `<div class="report-card"><div class="report-card-title">Occupancy &#8212; ${monthName}</div>
         <div class="report-row"><span>Active Spaces</span><strong style="color:var(--green)">${active}</strong></div>
         <div class="report-row"><span>Vacant Spaces</span><strong style="color:#2563eb">${vacant}</strong></div>
         <div class="report-row"><span>Inactive</span><strong style="color:var(--muted)">${allDrivers.filter(d=>d.status==='inactive').length}</strong></div>
         <div class="report-row"><span>Total Spaces</span><strong>${allDrivers.length}</strong></div>
         <div class="report-total"><span>Occupancy Rate</span><span style="color:var(--green)">${occupancy}%</span></div>
       </div>
-      <div class="report-card"><div class="report-card-title">Year-to-Date ${year}</div>
+      ` : ''} ${showYTD ? `<div class="report-card"><div class="report-card-title">Year-to-Date ${year}</div>
         <div class="report-row"><span>Total Revenue</span><strong>$${yearRev.toFixed(2)}</strong></div>
         <div class="report-row"><span>Late Fees Collected</span><strong style="color:var(--accent2)">$${yearLF.toFixed(2)}</strong></div>
         <div class="report-row"><span>Total Payments Recorded</span><strong>${yList.filter(p=>p.status==='paid').length}</strong></div>
         <div class="report-total"><span>YTD Total</span><span style="color:var(--green)">$${yearRev.toFixed(2)}</span></div>
       </div>
-      <div class="report-card"><div class="report-card-title">Available Spaces by Size</div>
+      ` : ''} ${showSpaceSize ? `<div class="report-card"><div class="report-card-title">Available Spaces by Size</div>
         ${['small','large','xl'].map(size => {
           const total = allDrivers.filter(d=>d.space_size===size).length;
           const available = allDrivers.filter(d=>d.space_size===size&&d.status==='vacant').length;
@@ -694,15 +770,15 @@ async function loadReports() {
         ${allDrivers.filter(d=>!d.space_size||d.space_size==='').length > 0 ? `<div class="report-row"><span style="color:var(--muted)">No size assigned</span><strong style="color:var(--muted)">${allDrivers.filter(d=>!d.space_size||d.space_size==='').length} spaces</strong></div>` : ''}
         <div class="report-total"><span>Total Vacant</span><span style="color:#2563eb">${allDrivers.filter(d=>d.status==='vacant').length} spaces</span></div>
       </div>
-      <div class="report-card"><div class="report-card-title">Potential Revenue</div>
+      ` : ''} ${showPotential ? `<div class="report-card"><div class="report-card-title">Potential Revenue</div>
         <div class="report-row"><span>Active Spaces (occupied)</span><strong style="color:var(--green)">$${potentialActive.toFixed(2)}</strong></div>
         <div class="report-row"><span>Vacant Spaces (if filled)</span><strong style="color:#2563eb">$${potentialVacant.toFixed(2)}</strong></div>
         <div class="report-row"><span>Occupancy Rate</span><strong>${occupancyRate}%</strong></div>
         <div class="report-row"><span>Revenue vs Potential</span><strong>${revenueEfficiency}%</strong></div>
         <div class="report-total"><span>Max Possible Revenue</span><span style="color:var(--accent)">$${potentialTotal.toFixed(2)}</span></div>
-      </div>
+      </div>` : ''}
     </div>
-    <div class="section-header"><div class="section-title">Payment Detail &#8212; ${monthName}</div></div>
+    ${showPayDetail ? `<div class="section-header"><div class="section-title">Payment Detail &#8212; ${monthName}</div></div>
     <div class="table-wrap" style="margin-bottom:24px">
       <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Rent</th><th>Late Fee</th><th>Total</th><th>Status</th><th>Method</th><th>Paid Date</th></tr></thead>
       <tbody>${pList.sort((a,b)=>(a.ym_drivers?.space_number||'').localeCompare(b.ym_drivers?.space_number||'')).map(p=>{
@@ -710,15 +786,16 @@ async function loadReports() {
         const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
         return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td style="color:var(--muted)">${d?d.company_name||'&#8212;':'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'$'+lf.toFixed(2):'&#8212;'}</td><td><strong>$${(Number(p.rent_amount)+lf).toFixed(2)}</strong></td><td>${badge}</td><td style="text-transform:capitalize">${p.payment_method||'&#8212;'}</td><td>${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td></tr>`;
       }).join('')}</tbody></table>
-    </div>
-    <div class="section-header"><div class="section-title">Space Tenant Directory</div></div>
+    </div>` : ''}
+    ${showTenantDir ? `<div class="section-header"><div class="section-title">Space Tenant Directory</div></div>
     <div class="table-wrap">
       <table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Phone</th><th>Email</th><th>Monthly Rent</th><th>Move-In</th><th>Truck Plate</th><th>Pmt Method</th><th>Status</th></tr></thead>
       <tbody>${allDrivers.map(d=>{
         const bc=d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
         return `<tr><td><strong>${d.space_number}</strong></td><td>${d.driver_name}</td><td>${d.company_name||'&#8212;'}</td><td>${d.phone||'&#8212;'}</td><td>${d.email||'&#8212;'}</td><td>$${Number(d.monthly_rent).toFixed(2)}</td><td>${d.move_in_date?new Date(d.move_in_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td><td>${d.truck_plate||'&#8212;'}</td><td style="text-transform:capitalize">${d.preferred_payment||'&#8212;'}</td><td><span class="badge ${bc}">${d.status}</span></td></tr>`;
       }).join('')}</tbody></table>
-    </div>`;
+    </div>` : ''}
+  `;
 }
 
 function showMsg(id, text, ok) {
