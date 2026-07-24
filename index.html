@@ -166,7 +166,8 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
     <div class="topbar-logo">&#9889; YARD MGR PRO</div>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="showTab('dashboard',this)">Dashboard</button>
-      <button class="nav-tab" onclick="showTab('spaces',this)">Spaces</button>
+      <button class="nav-tab" onclick="showTab('spacesmgmt',this)">Spaces</button>
+      <button class="nav-tab" onclick="showTab('spaces',this)">Drivers</button>
       <button class="nav-tab" onclick="showTab('payments',this)">Payments</button>
       <button class="nav-tab" onclick="showTab('notes',this)">Notes</button>
       <button class="nav-tab" onclick="showTab('reports',this)">Reports</button>
@@ -202,18 +203,39 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       </div>
     </div>
 
-    <!-- SPACES -->
+    <!-- SPACES (independent of who's renting them) -->
+    <div class="tab-panel" id="tab-spacesmgmt">
+      <div class="section-header">
+        <div class="section-title">Spaces</div>
+        <button class="btn-add" onclick="openSpaceModal()">+ Add Space</button>
+      </div>
+      <div class="controls-bar">
+        <input class="search-input" id="spacesmgmt-search" placeholder="Search space number..." oninput="renderSpacesMgmt()"/>
+        <button class="filter-btn active" onclick="setSpaceMgmtFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setSpaceMgmtFilter('occupied',this)">Occupied</button>
+        <button class="filter-btn" onclick="setSpaceMgmtFilter('vacant',this)">Vacant</button>
+        <button class="filter-btn" onclick="setSpaceMgmtFilter('maintenance',this)">Maintenance</button>
+      </div>
+      <div id="spacesmgmt-msg"></div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Space</th><th>Size</th><th>Default Rent</th><th>Status</th><th>Current Driver</th><th>Notes</th><th>Actions</th></tr></thead>
+          <tbody id="spacesmgmt-tbody"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DRIVERS -->
     <div class="tab-panel" id="tab-spaces">
       <div class="section-header">
-        <div class="section-title">Spaces &amp; Drivers</div>
+        <div class="section-title">Drivers</div>
         <button class="btn-add" onclick="openDriverModal()">+ Add Driver</button>
       </div>
       <div class="controls-bar">
-        <input class="search-input" id="spaces-search" placeholder="Search name or space..." oninput="renderSpaces()"/>
+        <input class="search-input" id="spaces-search" placeholder="Search name, company or space..." oninput="renderSpaces()"/>
         <button class="filter-btn active" onclick="setSpaceFilter('all',this)">All</button>
         <button class="filter-btn" onclick="setSpaceFilter('active',this)">Active</button>
         <button class="filter-btn" onclick="setSpaceFilter('inactive',this)">Inactive</button>
-        <button class="filter-btn" onclick="setSpaceFilter('vacant',this)">Vacant</button>
       </div>
       <div id="spaces-msg"></div>
       <div class="table-wrap">
@@ -235,6 +257,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
         <button class="btn-print" onclick="window.print()">&#128424; Print</button>
       </div>
       <div class="controls-bar">
+        <input class="search-input" id="pay-search" placeholder="Search driver, company or space..." oninput="renderPayments()"/>
         <button class="filter-btn active" onclick="setPayFilter('all',this)">All</button>
         <button class="filter-btn" onclick="setPayFilter('paid',this)">Paid</button>
         <button class="filter-btn" onclick="setPayFilter('unpaid',this)">Unpaid</button>
@@ -257,6 +280,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
         <button class="btn-add" onclick="openNoteModal()">+ Add Note</button>
       </div>
       <div class="controls-bar">
+        <input class="search-input" id="notes-search" placeholder="Search driver or note text..." oninput="renderNotes()"/>
         <select class="ctrl-select" id="notes-driver-filter" onchange="loadNotes()">
           <option value="">All Drivers</option>
         </select>
@@ -317,20 +341,40 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
     <div class="modal-title" id="driver-modal-title">Add Driver</div>
     <input type="hidden" id="edit-driver-id"/>
     <div class="form-grid">
-      <div class="form-row"><label>Space Number *</label><input type="text" id="drv-space" placeholder="e.g. A-12"/></div>
-      <div class="form-row"><label>Status</label><select id="drv-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="vacant">Vacant</option></select></div>
+      <div class="form-row"><label>Space *</label><select id="drv-space-select" onchange="onDriverSpaceChange()"><option value="">Select a space...</option></select></div>
+      <div class="form-row"><label>Status</label><select id="drv-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
       <div class="form-row form-full"><label>Driver Full Name *</label><input type="text" id="drv-name" placeholder="Full name"/></div>
       <div class="form-row form-full"><label>Company Name</label><input type="text" id="drv-company" placeholder="Company name (optional)"/></div>
-      <div class="form-row"><label>Space Size</label><select id="drv-size"><option value="">Select size...</option><option value="small">Small</option><option value="large">Large</option><option value="xl">XL</option></select></div>
       <div class="form-row"><label>Phone Number</label><input type="text" id="drv-phone" placeholder="(555) 555-5555"/></div>
       <div class="form-row"><label>Monthly Rent ($) *</label><input type="number" id="drv-rent" placeholder="450"/></div>
       <div class="form-row"><label>Truck Plate</label><input type="text" id="drv-plate" placeholder="ABC-1234"/></div>
       <div class="form-row"><label>Email Address</label><input type="email" id="drv-email" placeholder="driver@email.com"/></div>
       <div class="form-row"><label>Preferred Payment</label><select id="drv-payment"><option value="cash">Cash</option><option value="zelle">Zelle</option><option value="check">Check</option><option value="venmo">Venmo</option><option value="other">Other</option></select></div>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">Rent auto-fills from the space's default when you pick it — feel free to adjust it for this specific driver.</div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeDriverModal()">Cancel</button>
       <button class="btn-save" onclick="saveDriver()">Save Driver</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPACE MODAL -->
+<div class="modal-overlay" id="space-modal">
+  <div class="modal" style="width:440px">
+    <div class="modal-title" id="space-modal-title">Add Space</div>
+    <input type="hidden" id="edit-space-id"/>
+    <div class="form-grid">
+      <div class="form-row form-full"><label>Space Number *</label><input type="text" id="sp-number" placeholder="e.g. A-12"/></div>
+      <div class="form-row"><label>Size</label><select id="sp-size" onchange="onSpaceSizeChange()"><option value="small">Small</option><option value="xl">XL</option><option value="other">Other</option></select></div>
+      <div class="form-row"><label>Default Rent ($)</label><input type="number" id="sp-rent" placeholder="145"/></div>
+      <div class="form-row form-full"><label>Status</label><select id="sp-status"><option value="vacant">Vacant</option><option value="occupied">Occupied</option><option value="maintenance">Maintenance</option></select></div>
+      <div class="form-row form-full"><label>Notes (optional)</label><textarea id="sp-notes" placeholder="Anything worth remembering about this space..."></textarea></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">Small defaults to $145/mo, XL to $175/mo. Pick "Other" for spaces priced individually.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSpaceModal()">Cancel</button>
+      <button class="btn-save" onclick="saveSpace()">Save Space</button>
     </div>
   </div>
 </div>
@@ -379,11 +423,15 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistS
 
 let currentUser = null;
 let allDrivers = [];
+let allSpaces = [];
 let allPayments = [];
 let allNotes = [];
 let spaceFilter = 'all';
+let spaceMgmtFilter = 'all';
 let payFilter = 'all';
 let noteFilter = 'all';
+
+const SIZE_DEFAULT_RENT = { small: 145, xl: 175, other: null };
 
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
@@ -396,6 +444,7 @@ async function doLogin() {
   document.getElementById('user-label').textContent = email;
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'flex';
+  await loadAllSpaces();
   await loadAllDrivers();
   loadDashboard();
   initSelectors();
@@ -408,14 +457,30 @@ function showTab(tab, btn) {
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   btn.classList.add('active');
+  if (tab === 'spacesmgmt') renderSpacesMgmt();
   if (tab === 'spaces') renderSpaces();
   if (tab === 'notes') loadNotes();
   if (tab === 'account') { populateDriverSelects(); }
 }
 
+async function loadAllSpaces() {
+  const { data } = await _sb.from('ym_spaces').select('*').order('space_number');
+  allSpaces = data || [];
+}
+
 async function loadAllDrivers() {
-  const { data } = await _sb.from('ym_drivers').select('*').order('space_number');
-  allDrivers = data || [];
+  // Fetch drivers together with their linked space in one query (Supabase
+  // follows the space_id foreign key automatically), then flatten the space's
+  // fields onto the driver object — this keeps every existing part of the
+  // app (dashboard, payments, reports, etc.) working unchanged, since they
+  // already expect d.space_number / d.space_size directly on the driver.
+  const { data } = await _sb.from('ym_drivers').select('*, ym_spaces(*)').order('driver_name');
+  allDrivers = (data || []).map(d => ({
+    ...d,
+    space_number: d.ym_spaces?.space_number || d.space_number || '',
+    space_size: d.ym_spaces?.size || '',
+  }));
+  allDrivers.sort((a,b)=>(a.space_number||'').localeCompare(b.space_number||''));
   populateDriverSelects();
 }
 
@@ -441,7 +506,7 @@ async function loadDashboard() {
   document.getElementById('s-paid').textContent = pList.filter(p=>p.status==='paid').length;
   document.getElementById('s-unpaid').textContent = pList.filter(p=>p.status!=='paid').length;
   document.getElementById('s-spaces').textContent = allDrivers.filter(d=>d.status==='active').length;
-  document.getElementById('s-vacant').textContent = allDrivers.filter(d=>d.status==='vacant').length;
+  document.getElementById('s-vacant').textContent = allSpaces.filter(s=>s.status==='vacant').length;
   const rev = pList.filter(p=>p.status==='paid').reduce((s,p)=>s+Number(p.amount_paid||0),0);
   const lf = pList.filter(p=>p.status==='paid'&&Number(p.late_fee)>0).reduce((s,p)=>s+Number(p.late_fee),0);
   document.getElementById('s-revenue').textContent = '$'+rev.toFixed(2);
@@ -457,6 +522,86 @@ async function loadDashboard() {
   }).join('');
 }
 
+function setSpaceMgmtFilter(f, btn) {
+  spaceMgmtFilter = f;
+  document.querySelectorAll('#tab-spacesmgmt .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderSpacesMgmt();
+}
+
+function renderSpacesMgmt() {
+  const q = (document.getElementById('spacesmgmt-search').value||'').toLowerCase();
+  let rows = allSpaces;
+  if (spaceMgmtFilter !== 'all') rows = rows.filter(s=>s.status===spaceMgmtFilter);
+  if (q) rows = rows.filter(s=>s.space_number.toLowerCase().includes(q));
+  const tbody = document.getElementById('spacesmgmt-tbody');
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="7" class="empty-state">No spaces found.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(s => {
+    const bc = s.status==='occupied'?'badge-active':s.status==='vacant'?'badge-vacant':'badge-inactive';
+    const driver = allDrivers.find(d=>d.space_id===s.id && d.status==='active');
+    const sizeLabel = s.size==='small'?'Small':s.size==='xl'?'XL':'Other';
+    return `<tr><td><strong>${s.space_number}</strong></td><td>${sizeLabel}</td><td>$${Number(s.default_rent||0).toFixed(2)}</td><td><span class="badge ${bc}">${s.status}</span></td><td>${driver?driver.driver_name:'<span style="color:var(--muted)">&#8212;</span>'}</td><td style="color:var(--muted)">${s.notes||'&#8212;'}</td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editSpace('${s.id}')">Edit</button><button class="btn-sm btn-del" onclick="deleteSpace('${s.id}')">Del</button></td></tr>`;
+  }).join('');
+}
+
+function openSpaceModal(clear=true) {
+  if (clear) {
+    document.getElementById('space-modal-title').textContent = 'Add Space';
+    document.getElementById('edit-space-id').value = '';
+    document.getElementById('sp-number').value = '';
+    document.getElementById('sp-size').value = 'small';
+    document.getElementById('sp-rent').value = SIZE_DEFAULT_RENT.small;
+    document.getElementById('sp-status').value = 'vacant';
+    document.getElementById('sp-notes').value = '';
+  }
+  document.getElementById('space-modal').classList.add('open');
+}
+function closeSpaceModal() { document.getElementById('space-modal').classList.remove('open'); }
+
+function onSpaceSizeChange() {
+  const size = document.getElementById('sp-size').value;
+  const defaultRent = SIZE_DEFAULT_RENT[size];
+  if (defaultRent !== null) document.getElementById('sp-rent').value = defaultRent;
+}
+
+function editSpace(id) {
+  const s = allSpaces.find(x=>x.id===id); if(!s) return;
+  document.getElementById('space-modal-title').textContent = 'Edit Space';
+  document.getElementById('edit-space-id').value = s.id;
+  document.getElementById('sp-number').value = s.space_number;
+  document.getElementById('sp-size').value = s.size||'small';
+  document.getElementById('sp-rent').value = s.default_rent||0;
+  document.getElementById('sp-status').value = s.status||'vacant';
+  document.getElementById('sp-notes').value = s.notes||'';
+  openSpaceModal(false);
+}
+
+async function saveSpace() {
+  const id = document.getElementById('edit-space-id').value;
+  const payload = {
+    space_number: document.getElementById('sp-number').value.trim(),
+    size: document.getElementById('sp-size').value,
+    default_rent: parseFloat(document.getElementById('sp-rent').value)||0,
+    status: document.getElementById('sp-status').value,
+    notes: document.getElementById('sp-notes').value.trim()
+  };
+  if (!payload.space_number) { alert('Space number is required.'); return; }
+  let error;
+  if (id) ({ error } = await _sb.from('ym_spaces').update(payload).eq('id',id));
+  else ({ error } = await _sb.from('ym_spaces').insert(payload));
+  if (error) { showMsg('spacesmgmt-msg','Error: '+error.message,false); return; }
+  showMsg('spacesmgmt-msg', id?'Space updated!':'Space added!', true);
+  closeSpaceModal(); await loadAllSpaces(); await loadAllDrivers(); renderSpacesMgmt(); loadDashboard();
+}
+
+async function deleteSpace(id) {
+  const inUse = allDrivers.find(d=>d.space_id===id && d.status==='active');
+  if (inUse) { alert('This space has an active driver assigned. Reassign or deactivate the driver first.'); return; }
+  if (!confirm('Delete this space? This cannot be undone.')) return;
+  await _sb.from('ym_spaces').delete().eq('id',id);
+  showMsg('spacesmgmt-msg','Space deleted.',true);
+  await loadAllSpaces(); renderSpacesMgmt(); loadDashboard();
+}
+
 function setSpaceFilter(f, btn) {
   spaceFilter = f;
   document.querySelectorAll('#tab-spaces .filter-btn').forEach(b=>b.classList.remove('active'));
@@ -467,21 +612,41 @@ function renderSpaces() {
   const q = (document.getElementById('spaces-search').value||'').toLowerCase();
   let rows = allDrivers;
   if (spaceFilter !== 'all') rows = rows.filter(d=>d.status===spaceFilter);
-  if (q) rows = rows.filter(d=>d.driver_name.toLowerCase().includes(q)||d.space_number.toLowerCase().includes(q));
+  if (q) rows = rows.filter(d=>d.driver_name.toLowerCase().includes(q)||(d.space_number||'').toLowerCase().includes(q)||(d.company_name||'').toLowerCase().includes(q));
   const tbody = document.getElementById('spaces-tbody');
   if (!rows.length) { tbody.innerHTML=`<tr><td colspan="11" class="empty-state">No drivers found.</td></tr>`; return; }
   tbody.innerHTML = rows.map(d => {
-    const bc = d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
-    return `<tr><td><strong>${d.space_number}</strong></td><td>${d.driver_name}</td><td style="color:var(--muted)">${d.company_name||'&#8212;'}</td><td style="text-transform:capitalize;color:var(--muted)">${d.space_size||'&#8212;'}</td><td>${d.phone||'&#8212;'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td>${d.truck_plate||'&#8212;'}</td><td style="color:var(--muted)">${d.email||'&#8212;'}</td><td style="text-transform:capitalize">${d.preferred_payment||'&#8212;'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
+    const bc = d.status==='active'?'badge-active':'badge-inactive';
+    return `<tr><td><strong>${d.space_number||'&#8212;'}</strong></td><td>${d.driver_name}</td><td style="color:var(--muted)">${d.company_name||'&#8212;'}</td><td style="text-transform:capitalize;color:var(--muted)">${d.space_size||'&#8212;'}</td><td>${d.phone||'&#8212;'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td>${d.truck_plate||'&#8212;'}</td><td style="color:var(--muted)">${d.email||'&#8212;'}</td><td style="text-transform:capitalize">${d.preferred_payment||'&#8212;'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
   }).join('');
+}
+
+function buildSpaceDropdownOptions(currentSpaceId) {
+  // Show vacant spaces (available to assign) plus, if editing, the driver's
+  // own current space too (even though it's "occupied" by them already).
+  const options = allSpaces.filter(s => s.status === 'vacant' || s.id === currentSpaceId);
+  return '<option value="">Select a space...</option>' + options.map(s => {
+    const sizeLabel = s.size==='small'?'Small':s.size==='xl'?'XL':'Other';
+    return `<option value="${s.id}" data-rent="${s.default_rent||0}">${s.space_number} (${sizeLabel} — $${Number(s.default_rent||0).toFixed(2)}/mo)</option>`;
+  }).join('');
+}
+
+function onDriverSpaceChange() {
+  const sel = document.getElementById('drv-space-select');
+  const opt = sel.options[sel.selectedIndex];
+  const rent = opt ? opt.getAttribute('data-rent') : null;
+  // Only auto-fill if the rent field is still empty — never overwrite a
+  // rent the person already typed in for this driver.
+  const rentField = document.getElementById('drv-rent');
+  if (rent !== null && !rentField.value) rentField.value = rent;
 }
 
 function openDriverModal(clear=true) {
   if (clear) {
     document.getElementById('driver-modal-title').textContent = 'Add Driver';
     document.getElementById('edit-driver-id').value = '';
-    ['drv-space','drv-name','drv-company','drv-phone','drv-rent','drv-plate','drv-email'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('drv-size').value='';
+    ['drv-name','drv-company','drv-phone','drv-rent','drv-plate','drv-email'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('drv-space-select').innerHTML = buildSpaceDropdownOptions(null);
     document.getElementById('drv-status').value='active';
     document.getElementById('drv-payment').value='cash';
   }
@@ -493,12 +658,12 @@ async function editDriver(id) {
   const d = allDrivers.find(x=>x.id===id); if(!d) return;
   document.getElementById('driver-modal-title').textContent='Edit Driver';
   document.getElementById('edit-driver-id').value=d.id;
-  document.getElementById('drv-space').value=d.space_number;
+  document.getElementById('drv-space-select').innerHTML = buildSpaceDropdownOptions(d.space_id);
+  document.getElementById('drv-space-select').value = d.space_id || '';
   document.getElementById('drv-name').value=d.driver_name;
   document.getElementById('drv-company').value=d.company_name||'';
   document.getElementById('drv-phone').value=d.phone||'';
   document.getElementById('drv-rent').value=d.monthly_rent;
-  document.getElementById('drv-size').value=d.space_size||'';
   document.getElementById('drv-plate').value=d.truck_plate||'';
   document.getElementById('drv-email').value=d.email||'';
   document.getElementById('drv-status').value=d.status;
@@ -508,33 +673,53 @@ async function editDriver(id) {
 
 async function saveDriver() {
   const id = document.getElementById('edit-driver-id').value;
+  const newSpaceId = document.getElementById('drv-space-select').value || null;
+  const existing = id ? allDrivers.find(x=>x.id===id) : null;
+  const oldSpaceId = existing ? existing.space_id : null;
+
   const payload = {
-    space_number: document.getElementById('drv-space').value.trim(),
+    space_id: newSpaceId,
     driver_name: document.getElementById('drv-name').value.trim(),
     company_name: document.getElementById('drv-company').value.trim(),
     phone: document.getElementById('drv-phone').value.trim(),
     monthly_rent: parseFloat(document.getElementById('drv-rent').value)||0,
-    space_size: document.getElementById('drv-size').value,
     truck_plate: document.getElementById('drv-plate').value.trim(),
     email: document.getElementById('drv-email').value.trim(),
     status: document.getElementById('drv-status').value,
     preferred_payment: document.getElementById('drv-payment').value
   };
-  if (!payload.space_number) { alert('Space number is required.'); return; }
-  if (payload.status !== 'vacant' && !payload.driver_name) { alert('Driver name is required for active/inactive spaces.'); return; }
+  if (!newSpaceId) { alert('Please select a space.'); return; }
+  if (!payload.driver_name) { alert('Driver name is required.'); return; }
   let error;
   if (id) ({ error } = await _sb.from('ym_drivers').update(payload).eq('id',id));
   else ({ error } = await _sb.from('ym_drivers').insert(payload));
   if (error) { showMsg('spaces-msg','Error: '+error.message,false); return; }
+
+  // Keep space statuses honest: the newly assigned space becomes occupied
+  // (if this driver is active); if they moved off their old space, that
+  // one goes back to vacant so it can be assigned to someone else.
+  if (payload.status === 'active') {
+    await _sb.from('ym_spaces').update({ status:'occupied' }).eq('id', newSpaceId);
+  }
+  if (oldSpaceId && oldSpaceId !== newSpaceId) {
+    await _sb.from('ym_spaces').update({ status:'vacant' }).eq('id', oldSpaceId);
+  }
+  if (payload.status === 'inactive' && newSpaceId) {
+    await _sb.from('ym_spaces').update({ status:'vacant' }).eq('id', newSpaceId);
+  }
+
   showMsg('spaces-msg', id?'Driver updated!':'Driver added!', true);
-  closeDriverModal(); await loadAllDrivers(); renderSpaces(); loadDashboard();
+  closeDriverModal(); await loadAllSpaces(); await loadAllDrivers(); renderSpaces(); loadDashboard();
 }
 
 async function deleteDriver(id) {
   if (!confirm('Remove this driver? Payment and note history will remain.')) return;
+  const d = allDrivers.find(x=>x.id===id);
   await _sb.from('ym_drivers').delete().eq('id',id);
+  // Free up their space so it's available for the next driver.
+  if (d && d.space_id) await _sb.from('ym_spaces').update({ status:'vacant' }).eq('id', d.space_id);
   showMsg('spaces-msg','Driver removed.',true);
-  await loadAllDrivers(); renderSpaces(); loadDashboard();
+  await loadAllSpaces(); await loadAllDrivers(); renderSpaces(); loadDashboard();
 }
 
 function initSelectors() {
@@ -565,7 +750,13 @@ async function loadPaymentsTab() {
 
 function renderPayments() {
   let rows = payFilter==='all' ? allPayments : allPayments.filter(p=>p.status===payFilter);
-  rows.sort((a,b)=>(a.ym_drivers?.space_number||'').localeCompare(b.ym_drivers?.space_number||''));
+  const q = (document.getElementById('pay-search').value||'').toLowerCase();
+  if (q) rows = rows.filter(p=>{
+    const d=allDrivers.find(x=>x.id===p.driver_id);
+    if(!d) return false;
+    return d.driver_name.toLowerCase().includes(q)||(d.company_name||'').toLowerCase().includes(q)||(d.space_number||'').toLowerCase().includes(q);
+  });
+  rows.sort((a,b)=>(allDrivers.find(x=>x.id===a.driver_id)?.space_number||'').localeCompare(allDrivers.find(x=>x.id===b.driver_id)?.space_number||''));
   const tbody = document.getElementById('pay-tbody');
   if (!rows.length) { tbody.innerHTML=`<tr><td colspan="10" class="empty-state">No records. Click "Generate Month" to create records.</td></tr>`; return; }
   tbody.innerHTML = rows.map(p => {
@@ -588,7 +779,7 @@ async function generateMonthlyPayments() {
     const { data: ex } = await _sb.from('ym_payments').select('id').eq('driver_id',d.id).eq('month_year',monthYear);
     if (!ex||!ex.length) {
       const isLate = isCurrent && day > 5;
-      const { error: insErr } = await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, rent_amount:d.monthly_rent, late_fee:isLate?35:0, status:isLate?'late':'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent+(isLate?35:0) });
+      const { error: insErr } = await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, rent_amount:d.monthly_rent, late_fee:0, status:isLate?'late':'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent });
       if (insErr) { console.error('INSERT ERROR for '+d.driver_name+':', insErr); insertErrors.push(d.driver_name+': '+insErr.message); }
     }
   }
@@ -636,6 +827,13 @@ async function loadNotes() {
 
 function renderNotes() {
   let rows=noteFilter==='all'?allNotes:allNotes.filter(n=>n.category===noteFilter);
+  const q = (document.getElementById('notes-search').value||'').toLowerCase();
+  if (q) rows = rows.filter(n=>{
+    const d=allDrivers.find(x=>x.id===n.driver_id);
+    const driverMatch = d && (d.driver_name.toLowerCase().includes(q)||(d.space_number||'').toLowerCase().includes(q));
+    const textMatch = (n.note||'').toLowerCase().includes(q);
+    return driverMatch || textMatch;
+  });
   const container=document.getElementById('notes-list');
   if (!rows.length) { container.innerHTML=`<div class="empty-state">No notes found.</div>`; return; }
   container.innerHTML=rows.map(n => {
@@ -673,7 +871,7 @@ async function loadDriverAccount() {
   const totalOwed = pList.reduce((s,p)=>s+Number(p.rent_amount||0)+Number(p.late_fee||0),0);
   const totalPaid = pList.reduce((s,p)=>s+Number(p.amount_paid||0),0);
   const totalOutstanding = pList.filter(p=>p.status!=='paid').reduce((s,p)=>s+Number(p.balance_due||0),0);
-  const bc = driver.status==='active'?'badge-active':driver.status==='vacant'?'badge-vacant':'badge-inactive';
+  const bc = driver.status==='active'?'badge-active':'badge-inactive';
   document.getElementById('account-content').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;">
       <div class="stat-card green"><div class="stat-label">Total Paid</div><div class="stat-value">$${totalPaid.toFixed(2)}</div></div>
@@ -718,12 +916,12 @@ async function loadReports() {
   const yearRev=yList.filter(p=>p.status==='paid').reduce((s,p)=>s+Number(p.amount_paid||0),0);
   const yearLF=yList.filter(p=>p.status==='paid'&&Number(p.late_fee)>0).reduce((s,p)=>s+Number(p.late_fee),0);
   const active=allDrivers.filter(d=>d.status==='active').length;
-  const vacant=allDrivers.filter(d=>d.status==='vacant').length;
-  const occupancy=allDrivers.length?Math.round(active/allDrivers.length*100):0;
+  const vacant=allSpaces.filter(s=>s.status==='vacant').length;
+  const totalSpaces=allSpaces.length;
+  const occupancy=totalSpaces?Math.round(active/totalSpaces*100):0;
   const potentialActive=allDrivers.filter(d=>d.status==='active').reduce((s,d)=>s+Number(d.monthly_rent||0),0);
-  const potentialVacant=allDrivers.filter(d=>d.status==='vacant').reduce((s,d)=>s+Number(d.monthly_rent||0),0);
+  const potentialVacant=allSpaces.filter(s=>s.status==='vacant').reduce((s,sp)=>s+Number(sp.default_rent||0),0);
   const potentialTotal=potentialActive+potentialVacant;
-  const totalSpaces=allDrivers.filter(d=>d.status!=='inactive').length;
   const occupancyRate=totalSpaces?Math.round(active/totalSpaces*100):0;
   const revenueEfficiency=potentialTotal>0?Math.round((totalRev/potentialTotal)*100):0;
 
@@ -748,8 +946,8 @@ async function loadReports() {
   if (showOccupancy) html2 += '<div class="report-card"><div class="report-card-title">Occupancy &mdash; '+monthName+'</div>'
     +'<div class="report-row"><span>Active Spaces</span><strong style="color:var(--green)">'+active+'</strong></div>'
     +'<div class="report-row"><span>Vacant Spaces</span><strong style="color:#2563eb">'+vacant+'</strong></div>'
-    +'<div class="report-row"><span>Inactive</span><strong style="color:var(--muted)">'+allDrivers.filter(d=>d.status==='inactive').length+'</strong></div>'
-    +'<div class="report-row"><span>Total Spaces</span><strong>'+allDrivers.length+'</strong></div>'
+    +'<div class="report-row"><span>Inactive Drivers</span><strong style="color:var(--muted)">'+allDrivers.filter(d=>d.status==='inactive').length+'</strong></div>'
+    +'<div class="report-row"><span>Total Spaces</span><strong>'+allSpaces.length+'</strong></div>'
     +'<div class="report-total"><span>Occupancy Rate</span><span style="color:var(--green)">'+occupancy+'%</span></div></div>';
 
   if (showYTD) html2 += '<div class="report-card"><div class="report-card-title">Year-to-Date '+year+'</div>'
@@ -760,14 +958,13 @@ async function loadReports() {
 
   if (showSpaceSize) {
     let sizeHtml='<div class="report-card"><div class="report-card-title">Available Spaces by Size</div>';
-    ['small','large','xl'].forEach(size=>{
-      const total=allDrivers.filter(d=>d.space_size===size).length;
-      const available=allDrivers.filter(d=>d.space_size===size&&d.status==='vacant').length;
-      if(total>0) sizeHtml+='<div class="report-row"><span style="text-transform:capitalize">'+size+'</span><strong>'+available+' of '+total+' available</strong></div>';
+    ['small','xl','other'].forEach(size=>{
+      const total=allSpaces.filter(s=>s.size===size).length;
+      const available=allSpaces.filter(s=>s.size===size&&s.status==='vacant').length;
+      const label=size==='small'?'Small':size==='xl'?'XL':'Other';
+      if(total>0) sizeHtml+='<div class="report-row"><span>'+label+'</span><strong>'+available+' of '+total+' available</strong></div>';
     });
-    const noSize=allDrivers.filter(d=>!d.space_size||d.space_size==='').length;
-    if(noSize>0) sizeHtml+='<div class="report-row"><span style="color:var(--muted)">No size assigned</span><strong style="color:var(--muted)">'+noSize+' spaces</strong></div>';
-    sizeHtml+='<div class="report-total"><span>Total Vacant</span><span style="color:#2563eb">'+allDrivers.filter(d=>d.status==='vacant').length+' spaces</span></div></div>';
+    sizeHtml+='<div class="report-total"><span>Total Vacant</span><span style="color:#2563eb">'+allSpaces.filter(s=>s.status==='vacant').length+' spaces</span></div></div>';
     html2+=sizeHtml;
   }
 
@@ -795,7 +992,7 @@ async function loadReports() {
     html2+='<div class="section-header"><div class="section-title">Space Tenant Directory</div></div>';
     html2+='<div class="table-wrap"><table class="data-table"><thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Phone</th><th>Email</th><th>Monthly Rent</th><th>Truck Plate</th><th>Pmt Method</th><th>Status</th></tr></thead><tbody>';
     allDrivers.forEach(d=>{
-      const bc=d.status==='active'?'badge-active':d.status==='vacant'?'badge-vacant':'badge-inactive';
+      const bc=d.status==='active'?'badge-active':'badge-inactive';
       html2+='<tr><td><strong>'+d.space_number+'</strong></td><td>'+d.driver_name+'</td><td>'+(d.company_name||'&mdash;')+'</td><td>'+(d.phone||'&mdash;')+'</td><td>'+(d.email||'&mdash;')+'</td><td>$'+Number(d.monthly_rent).toFixed(2)+'</td><td>'+(d.truck_plate||'&mdash;')+'</td><td style="text-transform:capitalize">'+(d.preferred_payment||'&mdash;')+'</td><td><span class="badge '+bc+'">'+d.status+'</span></td></tr>';
     });
     html2+='</tbody></table></div>';
@@ -877,6 +1074,14 @@ async function doChangePassword(){
       <div class="form-row"><label>Balance Due ($)</label><input type="number" id="edit-balance-due" placeholder="0.00"/></div>
       <div class="form-row"><label>Status</label><select id="edit-pay-status"><option value="unpaid">Unpaid</option><option value="late">Late</option><option value="partial">Partial</option><option value="paid">Paid</option></select></div>
     </div>
+    <div style="background:var(--surface2);border-radius:3px;padding:12px 14px;margin-top:10px">
+      <label style="display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px;font-weight:600">Apply A Credit</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="apply-credit-amount" placeholder="0.00" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:3px;font-size:13px;"/>
+        <button type="button" class="btn-sm btn-pay" onclick="applyCreditToPayment()">Apply</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Subtracts this amount from the Balance Due above — use this for an already-posted month so it stops showing as owed.</div>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeEditPayModal()">Cancel</button>
       <button class="btn-save" onclick="saveEditPayment()">Save Changes</button>
@@ -903,6 +1108,17 @@ async function saveEditPayment() {
   const { error } = await _sb.from('ym_payments').update({ rent_amount:rent, late_fee:late, balance_due:bal, status }).eq('id',id);
   if (error) { showMsg('payments-msg','Error: '+error.message,false); return; }
   closeEditPayModal(); showMsg('payments-msg','Payment record updated!',true); loadPaymentsTab();
+}
+
+function applyCreditToPayment() {
+  const creditAmount = parseFloat(document.getElementById('apply-credit-amount').value)||0;
+  if (creditAmount <= 0) { alert('Enter a credit amount greater than zero.'); return; }
+  const balField = document.getElementById('edit-balance-due');
+  const currentBalance = parseFloat(balField.value)||0;
+  const newBalance = Math.max(currentBalance - creditAmount, 0);
+  balField.value = newBalance.toFixed(2);
+  if (newBalance === 0) document.getElementById('edit-pay-status').value = 'paid';
+  document.getElementById('apply-credit-amount').value = '';
 }
 </script>
 
