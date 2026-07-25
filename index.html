@@ -254,6 +254,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
         <select class="ctrl-select" id="pay-year"></select>
         <button class="btn-add" onclick="loadPaymentsTab()">Load</button>
         <button class="btn-report" onclick="generateMonthlyPayments()">Generate Month</button>
+        <button class="btn-add" onclick="openChargeModal()">+ Add Charge</button>
         <button class="btn-print" onclick="window.print()">&#128424; Print</button>
       </div>
       <div class="controls-bar">
@@ -263,12 +264,13 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
         <button class="filter-btn" onclick="setPayFilter('unpaid',this)">Unpaid</button>
         <button class="filter-btn" onclick="setPayFilter('late',this)">Late</button>
         <button class="filter-btn" onclick="setPayFilter('partial',this)">Partial</button>
+        <button class="filter-btn" onclick="loadManualCharges(this)" style="border-color:var(--accent2)">Prior/Manual Charges</button>
       </div>
       <div id="payments-msg"></div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Rent</th><th>Late Fee</th><th>Balance Due</th><th>Status</th><th>Method</th><th>Paid Date</th><th>Actions</th></tr></thead>
-          <tbody id="pay-tbody"><tr><td colspan="10" class="empty-state">Select a month and click Load</td></tr></tbody>
+          <thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Description</th><th>Rent</th><th>Late Fee</th><th>Balance Due</th><th>Status</th><th>Method</th><th>Paid Date</th><th>Actions</th></tr></thead>
+          <tbody id="pay-tbody"><tr><td colspan="11" class="empty-state">Select a month and click Load</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -325,9 +327,8 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
     <div class="tab-panel" id="tab-account">
       <div class="section-header">
         <div class="section-title">Driver Account</div>
-        <select class="ctrl-select" id="account-driver-select" onchange="loadDriverAccount()">
-          <option value="">Select a driver...</option>
-        </select>
+        <input class="ctrl-select" id="account-driver-select" list="account-driver-datalist" placeholder="Type a driver name..." autocomplete="off" oninput="loadDriverAccount()"/>
+        <datalist id="account-driver-datalist"></datalist>
       </div>
       <div id="account-content"><div class="empty-state">Select a driver to view their account.</div></div>
     </div>
@@ -496,8 +497,8 @@ async function loadAllDrivers() {
 }
 
 function populateDriverSelects() {
-  const accSel = document.getElementById('account-driver-select');
-  if (accSel) accSel.innerHTML = '<option value="">Select a driver...</option>' + allDrivers.map(d=>`<option value="${d.id}">${d.space_number} — ${d.driver_name}</option>`).join('');
+  const accDatalist = document.getElementById('account-driver-datalist');
+  if (accDatalist) accDatalist.innerHTML = allDrivers.map(d=>`<option value="${d.space_number} — ${d.driver_name}">`).join('');
   ['notes-driver-filter','note-driver'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
@@ -762,23 +763,41 @@ async function loadPaymentsTab() {
   allPayments = data||[]; renderPayments();
 }
 
+async function loadManualCharges(btn) {
+  // Manual charges (like a prior balance) don't belong to any single
+  // month, so this bypasses the month/year selector entirely and shows
+  // every one of them across all drivers.
+  document.querySelectorAll('#tab-payments .filter-btn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  payFilter = 'all';
+  const { data, error } = await _sb.from('ym_payments').select('*').eq('charge_type','manual').order('created_at',{ascending:false});
+  if (error) { showMsg('payments-msg','Load error: '+error.message,false); return; }
+  allPayments = data||[]; renderPayments();
+}
+
 function renderPayments() {
   let rows = payFilter==='all' ? allPayments : allPayments.filter(p=>p.status===payFilter);
   const q = (document.getElementById('pay-search').value||'').toLowerCase();
   if (q) rows = rows.filter(p=>{
-    const d=allDrivers.find(x=>x.id===p.driver_id);
-    if(!d) return false;
-    return d.driver_name.toLowerCase().includes(q)||(d.company_name||'').toLowerCase().includes(q)||(d.space_number||'').toLowerCase().includes(q);
+    const name=(p.driver_name_snapshot||'').toLowerCase(), co=(p.company_name_snapshot||'').toLowerCase(), sp=(p.space_number_snapshot||'').toLowerCase();
+    return name.includes(q)||co.includes(q)||sp.includes(q);
   });
-  rows.sort((a,b)=>(allDrivers.find(x=>x.id===a.driver_id)?.space_number||'').localeCompare(allDrivers.find(x=>x.id===b.driver_id)?.space_number||''));
+  rows.sort((a,b)=>(a.space_number_snapshot||'').localeCompare(b.space_number_snapshot||''));
   const tbody = document.getElementById('pay-tbody');
-  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="10" class="empty-state">No records. Click "Generate Month" to create records.</td></tr>`; return; }
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="11" class="empty-state">No records. Click "Generate Month" to create records.</td></tr>`; return; }
   tbody.innerHTML = rows.map(p => {
-    const d=allDrivers.find(x=>x.id===p.driver_id), lf=Number(p.late_fee||0), bal=Number(p.balance_due||0);
+    // Snapshot fields are the source of truth (frozen at the time this
+    // record was generated) — never look up the live driver record here,
+    // since that could have since been edited or reused for someone else.
+    const spaceNum = p.space_number_snapshot || '&#8212;';
+    const driverName = p.driver_name_snapshot || '&#8212;';
+    const companyName = p.company_name_snapshot || '&#8212;';
+    const desc = p.description || (p.charge_type==='manual' ? '&#8212;' : 'Monthly Rent ('+(p.month_year||'')+')');
+    const lf=Number(p.late_fee||0), bal=Number(p.balance_due||0);
     const badge=p.status==='paid'?'<span class="badge badge-paid">PAID</span>':p.status==='late'?'<span class="badge badge-late">LATE</span>':p.status==='partial'?'<span class="badge badge-partial">PARTIAL</span>':'<span class="badge badge-unpaid">UNPAID</span>';
     const editBtn=`<button class="btn-sm btn-edit" onclick="openEditPayModal('${p.id}')">Edit</button>`;
     const action=p.status!=='paid'?`<button class="btn-sm btn-pay" onclick="openPayModal('${p.id}')">Record</button> ${editBtn}`:`<span style="color:var(--green);font-size:11px">&#10003;</span> ${editBtn}`;
-    return `<tr><td><strong>${d?d.space_number:'&#8212;'}</strong></td><td>${d?d.driver_name:'&#8212;'}</td><td style="color:var(--muted)">${d?d.company_name||'&#8212;':'&#8212;'}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'&#8212;'}</td><td>${bal>0?'<span style="color:var(--accent2)">$'+bal.toFixed(2)+'</span>':'&#8212;'}</td><td>${badge}</td><td style="text-transform:capitalize;color:var(--muted)">${p.payment_method||'&#8212;'}</td><td style="color:var(--muted)">${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td><td>${action}</td></tr>`;
+    return `<tr><td><strong>${spaceNum}</strong></td><td>${driverName}</td><td style="color:var(--muted)">${companyName}</td><td style="color:var(--muted)">${desc}</td><td>$${Number(p.rent_amount).toFixed(2)}</td><td>${lf>0?'<span style="color:var(--accent2)">$'+lf.toFixed(2)+'</span>':'&#8212;'}</td><td>${bal>0?'<span style="color:var(--accent2)">$'+bal.toFixed(2)+'</span>':'&#8212;'}</td><td>${badge}</td><td style="text-transform:capitalize;color:var(--muted)">${p.payment_method||'&#8212;'}</td><td style="color:var(--muted)">${p.paid_date?new Date(p.paid_date+'T12:00:00').toLocaleDateString():'&#8212;'}</td><td>${action}</td></tr>`;
   }).join('');
 }
 
@@ -793,7 +812,7 @@ async function generateMonthlyPayments() {
     const { data: ex } = await _sb.from('ym_payments').select('id').eq('driver_id',d.id).eq('month_year',monthYear);
     if (!ex||!ex.length) {
       const isLate = isCurrent && day > 5;
-      const { error: insErr } = await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, rent_amount:d.monthly_rent, late_fee:0, status:isLate?'late':'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent });
+      const { error: insErr } = await _sb.from('ym_payments').insert({ driver_id:d.id, month_year:monthYear, charge_type:'rent', rent_amount:d.monthly_rent, late_fee:0, status:isLate?'late':'unpaid', payment_method:d.preferred_payment||'cash', amount_paid:0, balance_due:d.monthly_rent, driver_name_snapshot:d.driver_name, company_name_snapshot:d.company_name, space_number_snapshot:d.space_number });
       if (insErr) { console.error('INSERT ERROR for '+d.driver_name+':', insErr); insertErrors.push(d.driver_name+': '+insErr.message); }
     }
   }
@@ -876,10 +895,10 @@ async function saveNote() {
 async function deleteNote(id) { if(!confirm('Delete this note?')) return; await _sb.from('ym_notes').delete().eq('id',id); loadNotes(); }
 
 async function loadDriverAccount() {
-  const driverId = document.getElementById('account-driver-select').value;
-  if (!driverId) return;
-  const driver = allDrivers.find(d=>d.id===driverId);
-  if (!driver) return;
+  const typedVal = document.getElementById('account-driver-select').value;
+  const driver = allDrivers.find(d=>`${d.space_number} — ${d.driver_name}`===typedVal);
+  if (!driver) { document.getElementById('account-content').innerHTML = '<div class="empty-state">Select a driver to view their account.</div>'; return; }
+  const driverId = driver.id;
   const { data: payments } = await _sb.from('ym_payments').select('*').eq('driver_id', driverId).order('month_year', {ascending:false});
   const pList = payments||[];
   const totalOwed = pList.reduce((s,p)=>s+Number(p.rent_amount||0)+Number(p.late_fee||0),0);
@@ -1081,6 +1100,7 @@ async function doChangePassword(){
 <div class="modal-overlay" id="edit-pay-modal">
   <div class="modal">
     <div class="modal-title">Edit Payment Record</div>
+    <div id="edit-pay-context" style="font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:600"></div>
     <input type="hidden" id="edit-pay-modal-id"/>
     <div class="form-grid">
       <div class="form-row"><label>Rent Amount ($)</label><input type="number" id="edit-rent-amount" placeholder="0.00"/></div>
@@ -1102,6 +1122,24 @@ async function doChangePassword(){
     </div>
   </div>
 </div>
+
+<!-- ADD CHARGE MODAL -->
+<div class="modal-overlay" id="charge-modal">
+  <div class="modal">
+    <div class="modal-title">Add A Charge</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Use this for anything outside regular monthly rent — like a balance a driver already owed before they were in this system.</div>
+    <div class="form-grid">
+      <div class="form-row form-full"><label>Driver *</label><select id="charge-driver"><option value="">Select a driver...</option></select></div>
+      <div class="form-row form-full"><label>Description *</label><input type="text" id="charge-description" placeholder="e.g. Balance owed before May 2026"/></div>
+      <div class="form-row"><label>Amount Owed ($) *</label><input type="number" id="charge-amount" placeholder="0.00"/></div>
+      <div class="form-row"><label>Date Label</label><input type="text" id="charge-month-label" placeholder="e.g. Prior Balance"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeChargeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveCharge()">Add Charge</button>
+    </div>
+  </div>
+</div>
 <script>
 function openEditPayModal(id) {
   const p = allPayments.find(x=>x.id===id); if(!p) return;
@@ -1110,6 +1148,8 @@ function openEditPayModal(id) {
   document.getElementById('edit-late-fee').value = p.late_fee||0;
   document.getElementById('edit-balance-due').value = p.balance_due||0;
   document.getElementById('edit-pay-status').value = p.status||'unpaid';
+  const ctx = document.getElementById('edit-pay-context');
+  if (ctx) ctx.textContent = `${p.space_number_snapshot||'—'} — ${p.driver_name_snapshot||'—'} — ${p.description||p.month_year||''}`;
   document.getElementById('edit-pay-modal').classList.add('open');
 }
 function closeEditPayModal() { document.getElementById('edit-pay-modal').classList.remove('open'); }
@@ -1133,6 +1173,50 @@ function applyCreditToPayment() {
   balField.value = newBalance.toFixed(2);
   if (newBalance === 0) document.getElementById('edit-pay-status').value = 'paid';
   document.getElementById('apply-credit-amount').value = '';
+}
+
+function openChargeModal() {
+  const sel = document.getElementById('charge-driver');
+  // Include every driver regardless of active/inactive status — a prior
+  // balance can belong to someone who has since left too.
+  sel.innerHTML = '<option value="">Select a driver...</option>' + allDrivers
+    .slice().sort((a,b)=>a.driver_name.localeCompare(b.driver_name))
+    .map(d=>`<option value="${d.id}">${d.driver_name}${d.space_number?' ('+d.space_number+')':''}${d.status==='inactive'?' — inactive':''}</option>`).join('');
+  document.getElementById('charge-description').value='';
+  document.getElementById('charge-amount').value='';
+  document.getElementById('charge-month-label').value='Prior Balance';
+  document.getElementById('charge-modal').classList.add('open');
+}
+function closeChargeModal() { document.getElementById('charge-modal').classList.remove('open'); }
+
+async function saveCharge() {
+  const driverId = document.getElementById('charge-driver').value;
+  const description = document.getElementById('charge-description').value.trim();
+  const amount = parseFloat(document.getElementById('charge-amount').value)||0;
+  const monthLabel = document.getElementById('charge-month-label').value.trim() || 'Prior Balance';
+  if (!driverId) { alert('Please select a driver.'); return; }
+  if (!description) { alert('Please add a short description.'); return; }
+  if (amount <= 0) { alert('Enter an amount greater than zero.'); return; }
+  const d = allDrivers.find(x=>x.id===driverId);
+  const { error } = await _sb.from('ym_payments').insert({
+    driver_id: driverId,
+    month_year: monthLabel,
+    charge_type: 'manual',
+    description: description,
+    rent_amount: amount,
+    late_fee: 0,
+    amount_paid: 0,
+    balance_due: amount,
+    status: 'unpaid',
+    payment_method: d?.preferred_payment || 'cash',
+    driver_name_snapshot: d?.driver_name,
+    company_name_snapshot: d?.company_name,
+    space_number_snapshot: d?.space_number
+  });
+  if (error) { alert('Error: '+error.message); return; }
+  closeChargeModal();
+  showMsg('payments-msg', 'Charge added for '+(d?d.driver_name:'driver')+'!', true);
+  loadPaymentsTab();
 }
 </script>
 
