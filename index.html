@@ -187,7 +187,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
         <div class="stat-card green"><div class="stat-label">Paid This Month</div><div class="stat-value" id="s-paid">&#8212;</div></div>
         <div class="stat-card red"><div class="stat-label">Unpaid / Late</div><div class="stat-value" id="s-unpaid">&#8212;</div></div>
         <div class="stat-card blue"><div class="stat-label">Active Spaces</div><div class="stat-value" id="s-spaces">&#8212;</div></div>
-        <div class="stat-card purple"><div class="stat-label">Vacant Spaces</div><div class="stat-value" id="s-vacant">&#8212;</div></div>
+        <div class="stat-card purple"><div class="stat-label">Available Spaces</div><div class="stat-value" id="s-vacant">&#8212;</div></div>
         <div class="stat-card"><div class="stat-label">Revenue This Month</div><div class="stat-value" id="s-revenue">&#8212;</div></div>
         <div class="stat-card red"><div class="stat-label">Late Fees Collected</div><div class="stat-value" id="s-latefees">&#8212;</div></div>
       </div>
@@ -213,8 +213,8 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
         <input class="search-input" id="spacesmgmt-search" placeholder="Search space number..." oninput="renderSpacesMgmt()"/>
         <button class="filter-btn active" onclick="setSpaceMgmtFilter('all',this)">All</button>
         <button class="filter-btn" onclick="setSpaceMgmtFilter('occupied',this)">Occupied</button>
-        <button class="filter-btn" onclick="setSpaceMgmtFilter('vacant',this)">Vacant</button>
-        <button class="filter-btn" onclick="setSpaceMgmtFilter('maintenance',this)">Maintenance</button>
+        <button class="filter-btn" onclick="setSpaceMgmtFilter('vacant',this)">Available</button>
+        <button class="filter-btn" onclick="setSpaceMgmtFilter('maintenance',this)">Unavailable</button>
       </div>
       <div id="spacesmgmt-msg"></div>
       <div class="table-wrap">
@@ -240,8 +240,8 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       <div id="spaces-msg"></div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Space</th><th>Driver</th><th>Company</th><th>Size</th><th>Phone</th><th>Rent/Mo</th><th>Truck Plate</th><th>Email</th><th>Pmt Method</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody id="spaces-tbody"><tr><td colspan="11" class="empty-state">Loading...</td></tr></tbody>
+          <thead><tr><th>Space</th><th>Space Status</th><th>Driver</th><th>Company</th><th>Size</th><th>Phone</th><th>Rent/Mo</th><th>Truck Plate</th><th>Email</th><th>Pmt Method</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="spaces-tbody"><tr><td colspan="12" class="empty-state">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -368,7 +368,7 @@ select.ctrl-select { padding:7px 12px; border:1px solid var(--border); border-ra
       <div class="form-row form-full"><label>Space Number *</label><input type="text" id="sp-number" placeholder="e.g. A-12"/></div>
       <div class="form-row"><label>Size</label><select id="sp-size" onchange="onSpaceSizeChange()"><option value="small">Small</option><option value="xl">XL</option><option value="other">Other</option></select></div>
       <div class="form-row"><label>Default Rent ($)</label><input type="number" id="sp-rent" placeholder="145"/></div>
-      <div class="form-row form-full"><label>Status</label><select id="sp-status"><option value="vacant">Vacant</option><option value="occupied">Occupied</option><option value="maintenance">Maintenance</option></select></div>
+      <div class="form-row form-full"><label>Status</label><select id="sp-status"><option value="vacant">Available</option><option value="occupied">Occupied</option><option value="maintenance">Unavailable</option></select></div>
       <div class="form-row form-full"><label>Notes (optional)</label><textarea id="sp-notes" placeholder="Anything worth remembering about this space..."></textarea></div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-top:4px">Small defaults to $145/mo, XL to $175/mo. Pick "Other" for spaces priced individually.</div>
@@ -432,6 +432,17 @@ let payFilter = 'all';
 let noteFilter = 'all';
 
 const SIZE_DEFAULT_RENT = { small: 145, xl: 175, other: null };
+
+// Internal status codes never change (so existing data keeps working) —
+// only what's shown on screen changes: "vacant" displays as "Available",
+// "maintenance" displays as "Unavailable" (covers any reason a space can't
+// be rented right now, not just literal maintenance).
+function spaceStatusLabel(status) {
+  if (status === 'vacant') return 'Available';
+  if (status === 'maintenance') return 'Unavailable';
+  if (status === 'occupied') return 'Occupied';
+  return status;
+}
 
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
@@ -539,7 +550,7 @@ function renderSpacesMgmt() {
     const bc = s.status==='occupied'?'badge-active':s.status==='vacant'?'badge-vacant':'badge-inactive';
     const driver = allDrivers.find(d=>d.space_id===s.id && d.status==='active');
     const sizeLabel = s.size==='small'?'Small':s.size==='xl'?'XL':'Other';
-    return `<tr><td><strong>${s.space_number}</strong></td><td>${sizeLabel}</td><td>$${Number(s.default_rent||0).toFixed(2)}</td><td><span class="badge ${bc}">${s.status}</span></td><td>${driver?driver.driver_name:'<span style="color:var(--muted)">&#8212;</span>'}</td><td style="color:var(--muted)">${s.notes||'&#8212;'}</td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editSpace('${s.id}')">Edit</button><button class="btn-sm btn-del" onclick="deleteSpace('${s.id}')">Del</button></td></tr>`;
+    return `<tr><td><strong>${s.space_number}</strong></td><td>${sizeLabel}</td><td>$${Number(s.default_rent||0).toFixed(2)}</td><td><span class="badge ${bc}">${spaceStatusLabel(s.status)}</span></td><td>${driver?driver.driver_name:'<span style="color:var(--muted)">&#8212;</span>'}</td><td style="color:var(--muted)">${s.notes||'&#8212;'}</td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editSpace('${s.id}')">Edit</button><button class="btn-sm btn-del" onclick="deleteSpace('${s.id}')">Del</button></td></tr>`;
   }).join('');
 }
 
@@ -614,10 +625,13 @@ function renderSpaces() {
   if (spaceFilter !== 'all') rows = rows.filter(d=>d.status===spaceFilter);
   if (q) rows = rows.filter(d=>d.driver_name.toLowerCase().includes(q)||(d.space_number||'').toLowerCase().includes(q)||(d.company_name||'').toLowerCase().includes(q));
   const tbody = document.getElementById('spaces-tbody');
-  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="11" class="empty-state">No drivers found.</td></tr>`; return; }
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="12" class="empty-state">No drivers found.</td></tr>`; return; }
   tbody.innerHTML = rows.map(d => {
     const bc = d.status==='active'?'badge-active':'badge-inactive';
-    return `<tr><td><strong>${d.space_number||'&#8212;'}</strong></td><td>${d.driver_name}</td><td style="color:var(--muted)">${d.company_name||'&#8212;'}</td><td style="text-transform:capitalize;color:var(--muted)">${d.space_size||'&#8212;'}</td><td>${d.phone||'&#8212;'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td>${d.truck_plate||'&#8212;'}</td><td style="color:var(--muted)">${d.email||'&#8212;'}</td><td style="text-transform:capitalize">${d.preferred_payment||'&#8212;'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
+    const sp = allSpaces.find(x=>x.id===d.space_id);
+    const spBc = sp ? (sp.status==='occupied'?'badge-active':sp.status==='vacant'?'badge-vacant':'badge-inactive') : 'badge-inactive';
+    const spLabel = sp ? spaceStatusLabel(sp.status) : '&#8212;';
+    return `<tr><td><strong>${d.space_number||'&#8212;'}</strong></td><td><span class="badge ${spBc}">${spLabel}</span></td><td>${d.driver_name}</td><td style="color:var(--muted)">${d.company_name||'&#8212;'}</td><td style="text-transform:capitalize;color:var(--muted)">${d.space_size||'&#8212;'}</td><td>${d.phone||'&#8212;'}</td><td><strong>$${Number(d.monthly_rent).toFixed(2)}</strong></td><td>${d.truck_plate||'&#8212;'}</td><td style="color:var(--muted)">${d.email||'&#8212;'}</td><td style="text-transform:capitalize">${d.preferred_payment||'&#8212;'}</td><td><span class="badge ${bc}">${d.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-sm btn-edit" onclick="editDriver('${d.id}')">Edit</button><button class="btn-sm btn-note" onclick="quickNote('${d.id}')">Note</button><button class="btn-sm btn-del" onclick="deleteDriver('${d.id}')">Del</button></td></tr>`;
   }).join('');
 }
 
@@ -945,7 +959,7 @@ async function loadReports() {
 
   if (showOccupancy) html2 += '<div class="report-card"><div class="report-card-title">Occupancy &mdash; '+monthName+'</div>'
     +'<div class="report-row"><span>Active Spaces</span><strong style="color:var(--green)">'+active+'</strong></div>'
-    +'<div class="report-row"><span>Vacant Spaces</span><strong style="color:#2563eb">'+vacant+'</strong></div>'
+    +'<div class="report-row"><span>Available Spaces</span><strong style="color:#2563eb">'+vacant+'</strong></div>'
     +'<div class="report-row"><span>Inactive Drivers</span><strong style="color:var(--muted)">'+allDrivers.filter(d=>d.status==='inactive').length+'</strong></div>'
     +'<div class="report-row"><span>Total Spaces</span><strong>'+allSpaces.length+'</strong></div>'
     +'<div class="report-total"><span>Occupancy Rate</span><span style="color:var(--green)">'+occupancy+'%</span></div></div>';
@@ -964,13 +978,13 @@ async function loadReports() {
       const label=size==='small'?'Small':size==='xl'?'XL':'Other';
       if(total>0) sizeHtml+='<div class="report-row"><span>'+label+'</span><strong>'+available+' of '+total+' available</strong></div>';
     });
-    sizeHtml+='<div class="report-total"><span>Total Vacant</span><span style="color:#2563eb">'+allSpaces.filter(s=>s.status==='vacant').length+' spaces</span></div></div>';
+    sizeHtml+='<div class="report-total"><span>Total Available</span><span style="color:#2563eb">'+allSpaces.filter(s=>s.status==='vacant').length+' spaces</span></div></div>';
     html2+=sizeHtml;
   }
 
   if (showPotential) html2 += '<div class="report-card"><div class="report-card-title">Potential Revenue</div>'
     +'<div class="report-row"><span>Active Spaces (occupied)</span><strong style="color:var(--green)">$'+potentialActive.toFixed(2)+'</strong></div>'
-    +'<div class="report-row"><span>Vacant Spaces (if filled)</span><strong style="color:#2563eb">$'+potentialVacant.toFixed(2)+'</strong></div>'
+    +'<div class="report-row"><span>Available Spaces (if filled)</span><strong style="color:#2563eb">$'+potentialVacant.toFixed(2)+'</strong></div>'
     +'<div class="report-row"><span>Occupancy Rate</span><strong>'+occupancyRate+'%</strong></div>'
     +'<div class="report-row"><span>Revenue vs Potential</span><strong>'+revenueEfficiency+'%</strong></div>'
     +'<div class="report-total"><span>Max Possible Revenue</span><span style="color:var(--accent)">$'+potentialTotal.toFixed(2)+'</span></div></div>';
